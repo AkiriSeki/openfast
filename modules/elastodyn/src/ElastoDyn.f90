@@ -35,9 +35,6 @@ MODULE ElastoDyn
    
    REAL(R8Ki)  :: MinPerturb = SQRT( EPSILON( 1.0_R8Ki ) ) ! minimum value for perturbation in ED jacobians
    
-   INTEGER(IntKi), PARAMETER        :: HybridMode_DISPCTRL    = 1          !< The (ElastoDyn-universal) control code for specifying the displacement control (force inputs, displacement outputs) hybrid modeling approach via Simulink
-   INTEGER(IntKi), PARAMETER        :: HybridMode_FORCECTRL   = 2          !< The (ElastoDyn-universal) control code for specifying the force control (displacement inputs, force outputs) hybrid modeling approach via Simulink
-
       ! ..... Public Subroutines ...................................................................................................
 
    PUBLIC :: ED_Init                           ! Initialization routine
