@@ -15,7 +15,7 @@
 
 mexname = 'FAST_SFunc'; % base name of the resulting mex file
 
-built_with_visualStudio = true; %if the libraries were built with cmake, set to false
+built_with_visualStudio = false; %if the libraries were built with cmake, set to false
 
 
 if (ispc && built_with_visualStudio)   
@@ -24,16 +24,16 @@ if (ispc && built_with_visualStudio)
     libDir = '../../../build/bin';
     includeDir = '../../../modules/openfast-library/src';  % needed for visual studio builds to find "FAST_Library.h"
     outDir = libDir;
-        
+    
     switch computer('arch')
         case 'win64'
             % this is set up for files generated using the x64 configuration of vs-build
-            libName = 'OpenFAST-Simulink_x64';
+            libName = 'OpenFAST-Simulink-hybrid_x64';
 
         case 'win32' 
             % this is set up for files generated using the x86
             % configuration of vs-build (win32 will work only on older versions of Matlab)
-            libName = 'OpenFAST-Simulink_Win32';
+            libName = 'OpenFAST-Simulink-hybrid_Win32';
     end
     
 else    
@@ -44,8 +44,8 @@ else
         outDir = fullfile(installDir, 'lib');
         % If there are shared libraries does it work for outDir to be the local directory?
     else
-        installDir = '/usr/local';
-        outDir = '.';
+        installDir = '../../../install';
+        outDir = fullfile(installDir, 'lib');
     end
 
     libDir = fullfile(installDir, 'lib');

@@ -22,8 +22,8 @@ MODULE FAST_Data
    INTEGER(IntKi)                        :: NumTurbines 
    INTEGER,        PARAMETER             :: IntfStrLen  = 1025       ! length of strings through the C interface
    INTEGER(IntKi), PARAMETER             :: MAXOUTPUTS = 1000        ! Maximum number of outputs
-   INTEGER(IntKi), PARAMETER             :: MAXInitINPUTS = 10       ! Maximum number of initialization values from Simulink
-   INTEGER(IntKi), PARAMETER             :: NumFixedInputs = 8
+   INTEGER(IntKi), PARAMETER             :: MAXInitINPUTS = 23       ! Maximum number of initialization values from Simulink
+   INTEGER(IntKi), PARAMETER             :: NumFixedInputs = 12
    
    
       ! Global (static) data:
@@ -53,10 +53,16 @@ subroutine FAST_AllocateTurbines(nTurbines, ErrStat_c, ErrMsg_c) BIND (C, NAME='
       call wrscr1('Proceeding anyway')
    end if
 
-   allocate(Turbine(0:NumTurbines-1)) !Allocate in C style because most of the other Turbine properties from the input file are in C style inside the C++ driver
+   allocate(Turbine(0:NumTurbines-1),Stat=ErrStat) !Allocate in C style because most of the other Turbine properties from the input file are in C style inside the C++ driver
 
-   ErrStat_c = ErrID_None
-   ErrMsg_c = ''
+   if (ErrStat /= 0) then
+      ErrStat_c = ErrID_Fatal
+      ErrMsg    = "Error allocating turbine data."//C_NULL_CHAR
+   else
+      ErrStat_c = ErrID_None
+      ErrMsg = " "//C_NULL_CHAR
+   end if
+   ErrMsg_c  = TRANSFER( ErrMsg//C_NULL_CHAR, ErrMsg_c )
    
 end subroutine FAST_AllocateTurbines
 
@@ -74,7 +80,7 @@ subroutine FAST_DeallocateTurbines(ErrStat_c, ErrMsg_c) BIND (C, NAME='FAST_Deal
    end if
 
    ErrStat_c = ErrID_None
-   ErrMsg_c = ''
+   ErrMsg_c = C_NULL_CHAR
 end subroutine
 
 subroutine FAST_Sizes(iTurb, TMax, InitInpAry, InputFileName_c, AbortErrLev_c, NumOuts_c, dt_c, ErrStat_c, ErrMsg_c, ChannelNames_c) BIND (C, NAME='FAST_Sizes')
@@ -182,9 +188,10 @@ subroutine FAST_Start(iTurb, NumInputs_c, NumOutputs_c, InputAry, OutputAry, Err
    n_t_global = 0
 
 #ifdef SIMULINK_DirectFeedThrough   
-   IF(  NumInputs_c /= NumFixedInputs .AND. NumInputs_c /= NumFixedInputs+3 ) THEN
+   IF(  NumInputs_c /= NumFixedInputs .AND. NumInputs_c /= NumFixedInputs+8 .AND. NumInputs_c /= NumFixedInputs+11) THEN
       ErrStat_c = ErrID_Fatal
-      ErrMsg_c  = TRANSFER( "FAST_Start:size of InputAry is invalid."//C_NULL_CHAR, ErrMsg_c )
+      ErrMsg  = "FAST_Start:size of InputAry is invalid."//C_NULL_CHAR
+      ErrMsg_c  = TRANSFER( ErrMsg//C_NULL_CHAR, ErrMsg_c )
       RETURN
    END IF
 
@@ -269,7 +276,7 @@ subroutine FAST_Update(iTurb, NumInputs_c, NumOutputs_c, InputAry, OutputAry, Er
       ErrMsg    = "FAST_Update:size of OutputAry is invalid or FAST has too many outputs."//C_NULL_CHAR
       ErrMsg_c  = TRANSFER( ErrMsg//C_NULL_CHAR, ErrMsg_c )
       RETURN
-   ELSEIF(  NumInputs_c /= NumFixedInputs .AND. NumInputs_c /= NumFixedInputs+3 ) THEN
+   ELSEIF(  NumInputs_c /= NumFixedInputs .AND. NumInputs_c /= NumFixedInputs+8 .AND. NumInputs_c /= NumFixedInputs+11) THEN
       ErrStat_c = ErrID_Fatal
       ErrMsg    = "FAST_Update:size of InputAry is invalid."//C_NULL_CHAR
       ErrMsg_c  = TRANSFER( ErrMsg//C_NULL_CHAR, ErrMsg_c )
@@ -319,21 +326,48 @@ subroutine FAST_SetExternalInputs(iTurb, NumInputs_c, InputAry, m_FAST)
    REAL(C_DOUBLE),         INTENT(IN   ) :: InputAry(NumInputs_c)                   ! Inputs from Simulink
    TYPE(FAST_MiscVarType), INTENT(INOUT) :: m_FAST                                  ! Miscellaneous variables
    
+   INTEGER  :: num_twr_nodes
+   INTEGER  :: j, k
+   
          ! set the inputs from external code here...
          ! transfer inputs from Simulink to FAST
       IF ( NumInputs_c < NumFixedInputs ) RETURN ! This is an error
       
-      m_FAST%ExternInput%GenTrq      = InputAry(1)
-      m_FAST%ExternInput%ElecPwr     = InputAry(2)
-      m_FAST%ExternInput%YawPosCom   = InputAry(3)
-      m_FAST%ExternInput%YawRateCom  = InputAry(4)
-      m_FAST%ExternInput%BlPitchCom  = InputAry(5:7)
-      m_FAST%ExternInput%HSSBrFrac   = InputAry(8)         
+      
+      IF ( NumInputs_c == NumFixedInputs ) THEN  ! Default for hybrid model use: ElastoDyn inputs
+         m_FAST%ExternInput%PtfmSurge    = InputAry(1)
+         m_FAST%ExternInput%PtfmSway     = InputAry(2)
+         m_FAST%ExternInput%PtfmHeave    = InputAry(3)
+         m_FAST%ExternInput%PtfmRoll     = InputAry(4)
+         m_FAST%ExternInput%PtfmPitch    = InputAry(5)
+         m_FAST%ExternInput%PtfmYaw      = InputAry(6)
+         m_FAST%ExternInput%PtfmSurgeVel = InputAry(7)
+         m_FAST%ExternInput%PtfmSwayVel  = InputAry(8)
+         m_FAST%ExternInput%PtfmHeaveVel = InputAry(9)
+         m_FAST%ExternInput%PtfmRollVel  = InputAry(10)
+         m_FAST%ExternInput%PtfmPitchVel = InputAry(11)
+         m_FAST%ExternInput%PtfmYawVel   = InputAry(12)
+      ENDIF
             
-      IF ( NumInputs_c > NumFixedInputs ) THEN  ! NumFixedInputs is the fixed number of inputs
-         IF ( NumInputs_c == NumFixedInputs + 3 ) &
-             m_FAST%ExternInput%LidarFocus = InputAry(9:11)
-      END IF   
+         ! Some other modular configuration is being used for Simulink (@mcd: these functions comprised the traditional use of Simulink with OpenFAST)
+      IF ( NumInputs_c > NumFixedInputs ) THEN
+         IF ( NumInputs_c == NumFixedInputs + 8 ) THEN  ! ED + SrvD inputs, no IfW inputs
+             m_FAST%ExternInput%GenTrq      = InputAry(13)
+             m_FAST%ExternInput%ElecPwr     = InputAry(14)
+             m_FAST%ExternInput%YawPosCom   = InputAry(15)
+             m_FAST%ExternInput%YawRateCom  = InputAry(16)
+             m_FAST%ExternInput%BlPitchCom  = InputAry(17:19)
+             m_FAST%ExternInput%HSSBrFrac   = InputAry(20)  
+         ELSEIF ( Numinputs_c == NumFixedInputs + 11 ) THEN  ! SrvD + IfW + ED inputs
+             m_FAST%ExternInput%GenTrq      = InputAry(13)
+             m_FAST%ExternInput%ElecPwr     = InputAry(14)
+             m_FAST%ExternInput%YawPosCom   = InputAry(15)
+             m_FAST%ExternInput%YawRateCom  = InputAry(16)
+             m_FAST%ExternInput%BlPitchCom  = InputAry(17:19)
+             m_FAST%ExternInput%HSSBrFrac   = InputAry(20)  
+             m_FAST%ExternInput%LidarFocus  = InputAry(21:23)
+         ENDIF
+      ENDIF
       
 end subroutine FAST_SetExternalInputs
 !==================================================================================================================================

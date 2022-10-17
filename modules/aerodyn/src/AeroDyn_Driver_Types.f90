@@ -78,6 +78,8 @@ IMPLICIT NONE
 ! =========  Dvr_SimData  =======
   TYPE, PUBLIC :: Dvr_SimData
     character(1024)  :: AD_InputFile      !< Name of AeroDyn input file [-]
+    character(1024)  :: Phys_HubFile      !< Name of outputted hub data file from the physical model [-]
+    character(1024)  :: Phys_TwrFile      !< Name of outputted tower data file from the physical model [-]
     INTEGER(IntKi)  :: numBlades      !< number of blades on turbine [-]
     REAL(ReKi)  :: hubRad      !< Hub radius [m]
     REAL(ReKi)  :: hubHt      !< Hub height [m]
@@ -1533,6 +1535,8 @@ ENDDO
    ErrStat = ErrID_None
    ErrMsg  = ""
     DstDvr_SimDataData%AD_InputFile = SrcDvr_SimDataData%AD_InputFile
+    DstDvr_SimDataData%Phys_HubFile = SrcDvr_SimDataData%Phys_HubFile
+    DstDvr_SimDataData%Phys_TwrFile = SrcDvr_SimDataData%Phys_TwrFile
     DstDvr_SimDataData%numBlades = SrcDvr_SimDataData%numBlades
     DstDvr_SimDataData%hubRad = SrcDvr_SimDataData%hubRad
     DstDvr_SimDataData%hubHt = SrcDvr_SimDataData%hubHt
@@ -1615,6 +1619,8 @@ ENDIF
   Db_BufSz  = 0
   Int_BufSz  = 0
       Int_BufSz  = Int_BufSz  + 1*LEN(InData%AD_InputFile)  ! AD_InputFile
+      Int_BufSz  = Int_BufSz  + 1*LEN(InData%Phys_HubFile)  ! Phys_HubFile
+      Int_BufSz  = Int_BufSz  + 1*LEN(InData%Phys_TwrFile)  ! Phys_TwrFile
       Int_BufSz  = Int_BufSz  + 1  ! numBlades
       Re_BufSz   = Re_BufSz   + 1  ! hubRad
       Re_BufSz   = Re_BufSz   + 1  ! hubHt
@@ -1692,6 +1698,14 @@ ENDIF
 
         DO I = 1, LEN(InData%AD_InputFile)
           IntKiBuf(Int_Xferred) = ICHAR(InData%AD_InputFile(I:I), IntKi)
+          Int_Xferred = Int_Xferred   + 1
+        END DO ! I
+        DO I = 1, LEN(InData%Phys_HubFile)
+          IntKiBuf(Int_Xferred) = ICHAR(InData%Phys_HubFile(I:I), IntKi)
+          Int_Xferred = Int_Xferred   + 1
+        END DO ! I
+        DO I = 1, LEN(InData%Phys_TwrFile)
+          IntKiBuf(Int_Xferred) = ICHAR(InData%Phys_TwrFile(I:I), IntKi)
           Int_Xferred = Int_Xferred   + 1
         END DO ! I
       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%numBlades
@@ -1814,6 +1828,14 @@ ENDIF
   Int_Xferred  = 1
       DO I = 1, LEN(OutData%AD_InputFile)
         OutData%AD_InputFile(I:I) = CHAR(IntKiBuf(Int_Xferred))
+        Int_Xferred = Int_Xferred   + 1
+      END DO ! I
+      DO I = 1, LEN(OutData%Phys_HubFile)
+        OutData%Phys_HubFile(I:I) = CHAR(IntKiBuf(Int_Xferred))
+        Int_Xferred = Int_Xferred   + 1
+      END DO ! I
+      DO I = 1, LEN(OutData%Phys_TwrFile)
+        OutData%Phys_TwrFile(I:I) = CHAR(IntKiBuf(Int_Xferred))
         Int_Xferred = Int_Xferred   + 1
       END DO ! I
       OutData%numBlades = IntKiBuf( Int_Xferred ) 

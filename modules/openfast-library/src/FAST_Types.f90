@@ -533,6 +533,18 @@ IMPLICIT NONE
     REAL(ReKi) , DIMENSION(1:3)  :: BlPitchCom      !< blade pitch commands from Simulink/Labview [rad/s]
     REAL(ReKi)  :: HSSBrFrac      !< Fraction of full braking torque: 0 (off) <= HSSBrFrac <= 1 (full) from Simulink or LabVIEW [-]
     REAL(ReKi) , DIMENSION(1:3)  :: LidarFocus      !< lidar focus (relative to lidar location) [m]
+    REAL(ReKi)  :: PtfmSurge      !< Surge (xi-direction) translational displacement or hydrodynamic force of platform from physical model (depending on hybrid mode) [-]
+    REAL(ReKi)  :: PtfmSway      !< Sway (yi-direction) translational displacement or hydrodynamic force of platform from physical model (depending on hybrid mode) [-]
+    REAL(ReKi)  :: PtfmHeave      !< Heave (zi-direction) translational displacement or hydrodynamic force of platform from physical model (depending on hybrid mode) [-]
+    REAL(ReKi)  :: PtfmRoll      !< Roll (xi-direction) rotational displacement or hydrodynamic moment of platform from physical model (depending on hybrid mode) [-]
+    REAL(ReKi)  :: PtfmPitch      !< Pitch (yi-direction) rotational displacement or hydrodynamic moment of platform from physical model (depending on hybrid mode) [-]
+    REAL(ReKi)  :: PtfmYaw      !< Yaw (zi-direction) rotational displacement or hydrodynamic moment of platform from physical model (depending on hybrid mode) [-]
+    REAL(ReKi)  :: PtfmSurgeVel      !< Surge (xi-direction) translational velocity of platform from physical model (for force control) [-]
+    REAL(ReKi)  :: PtfmSwayVel      !< Sway (yi-direction) translational velocity of platform from physical model (for force control) [-]
+    REAL(ReKi)  :: PtfmHeaveVel      !< Heave (zi-direction) translational velocity of platform from physical model (for force control) [-]
+    REAL(ReKi)  :: PtfmRollVel      !< Roll (xi-direction) rotational velocity of platform from physical model (for force control) [-]
+    REAL(ReKi)  :: PtfmPitchVel      !< Pitch (yi-direction) rotational velocity of platform from physical model (for force control) [-]
+    REAL(ReKi)  :: PtfmYawVel      !< Yaw (zi-direction) rotational velocity of platform from physical model (for force control) [-]
   END TYPE FAST_ExternInputType
 ! =======================
 ! =========  FAST_MiscVarType  =======
@@ -28330,6 +28342,18 @@ ENDIF
     DstExternInputTypeData%BlPitchCom = SrcExternInputTypeData%BlPitchCom
     DstExternInputTypeData%HSSBrFrac = SrcExternInputTypeData%HSSBrFrac
     DstExternInputTypeData%LidarFocus = SrcExternInputTypeData%LidarFocus
+    DstExternInputTypeData%PtfmSurge = SrcExternInputTypeData%PtfmSurge
+    DstExternInputTypeData%PtfmSway = SrcExternInputTypeData%PtfmSway
+    DstExternInputTypeData%PtfmHeave = SrcExternInputTypeData%PtfmHeave
+    DstExternInputTypeData%PtfmRoll = SrcExternInputTypeData%PtfmRoll
+    DstExternInputTypeData%PtfmPitch = SrcExternInputTypeData%PtfmPitch
+    DstExternInputTypeData%PtfmYaw = SrcExternInputTypeData%PtfmYaw
+    DstExternInputTypeData%PtfmSurgeVel = SrcExternInputTypeData%PtfmSurgeVel
+    DstExternInputTypeData%PtfmSwayVel = SrcExternInputTypeData%PtfmSwayVel
+    DstExternInputTypeData%PtfmHeaveVel = SrcExternInputTypeData%PtfmHeaveVel
+    DstExternInputTypeData%PtfmRollVel = SrcExternInputTypeData%PtfmRollVel
+    DstExternInputTypeData%PtfmPitchVel = SrcExternInputTypeData%PtfmPitchVel
+    DstExternInputTypeData%PtfmYawVel = SrcExternInputTypeData%PtfmYawVel
  END SUBROUTINE FAST_CopyExternInputType
 
  SUBROUTINE FAST_DestroyExternInputType( ExternInputTypeData, ErrStat, ErrMsg )
@@ -28385,6 +28409,18 @@ ENDIF
       Re_BufSz   = Re_BufSz   + SIZE(InData%BlPitchCom)  ! BlPitchCom
       Re_BufSz   = Re_BufSz   + 1  ! HSSBrFrac
       Re_BufSz   = Re_BufSz   + SIZE(InData%LidarFocus)  ! LidarFocus
+      Re_BufSz   = Re_BufSz   + 1  ! PtfmSurge
+      Re_BufSz   = Re_BufSz   + 1  ! PtfmSway
+      Re_BufSz   = Re_BufSz   + 1  ! PtfmHeave
+      Re_BufSz   = Re_BufSz   + 1  ! PtfmRoll
+      Re_BufSz   = Re_BufSz   + 1  ! PtfmPitch
+      Re_BufSz   = Re_BufSz   + 1  ! PtfmYaw
+      Re_BufSz   = Re_BufSz   + 1  ! PtfmSurgeVel
+      Re_BufSz   = Re_BufSz   + 1  ! PtfmSwayVel
+      Re_BufSz   = Re_BufSz   + 1  ! PtfmHeaveVel
+      Re_BufSz   = Re_BufSz   + 1  ! PtfmRollVel
+      Re_BufSz   = Re_BufSz   + 1  ! PtfmPitchVel
+      Re_BufSz   = Re_BufSz   + 1  ! PtfmYawVel
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -28426,6 +28462,30 @@ ENDIF
       Re_Xferred   = Re_Xferred   + 1
       ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%LidarFocus))-1 ) = PACK(InData%LidarFocus,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%LidarFocus)
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%PtfmSurge
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%PtfmSway
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%PtfmHeave
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%PtfmRoll
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%PtfmPitch
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%PtfmYaw
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%PtfmSurgeVel
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%PtfmSwayVel
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%PtfmHeaveVel
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%PtfmRollVel
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%PtfmPitchVel
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%PtfmYawVel
+      Re_Xferred   = Re_Xferred   + 1
  END SUBROUTINE FAST_PackExternInputType
 
  SUBROUTINE FAST_UnPackExternInputType( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -28493,6 +28553,30 @@ ENDIF
       OutData%LidarFocus = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%LidarFocus))-1 ), mask1, 0.0_ReKi )
       Re_Xferred   = Re_Xferred   + SIZE(OutData%LidarFocus)
     DEALLOCATE(mask1)
+      OutData%PtfmSurge = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%PtfmSway = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%PtfmHeave = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%PtfmRoll = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%PtfmPitch = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%PtfmYaw = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%PtfmSurgeVel = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%PtfmSwayVel = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%PtfmHeaveVel = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%PtfmRollVel = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%PtfmPitchVel = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%PtfmYawVel = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
  END SUBROUTINE FAST_UnPackExternInputType
 
  SUBROUTINE FAST_CopyMisc( SrcMiscData, DstMiscData, CtrlCode, ErrStat, ErrMsg )

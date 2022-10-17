@@ -28,6 +28,12 @@ MODULE ElastoDyn_Parameters
 
    TYPE(ProgDesc), PARAMETER  :: ED_Ver = ProgDesc( 'ElastoDyn', '', '' )
    
+#ifdef COMPILE_SIMULINK
+   LOGICAL, PARAMETER, PUBLIC           :: Cmpl4SFun  = .TRUE.                            ! Is the module being compiled as an S-Function for Simulink?
+#else
+   LOGICAL, PARAMETER, PUBLIC           :: Cmpl4SFun  = .FALSE.                           ! Is the module being compiled as an S-Function for Simulink?
+#endif
+
    REAL(ReKi), PARAMETER      :: SmallAngleLimit_Deg  =  15.0                     ! Largest input angle considered "small" (used as a check on input data), degrees
 
 
@@ -89,7 +95,9 @@ MODULE ElastoDyn_Parameters
    INTEGER(IntKi), PARAMETER        :: Method_AB4  = 2
    INTEGER(IntKi), PARAMETER        :: Method_ABM4 = 3
 
-
+   INTEGER(IntKi), PARAMETER        :: HybridMode_DISPCTRL    = 1          !< The (ElastoDyn-universal) control code for specifying the displacement control (force inputs, displacement outputs) hybrid modeling approach via Simulink
+   INTEGER(IntKi), PARAMETER        :: HybridMode_FORCECTRL   = 2          !< The (ElastoDyn-universal) control code for specifying the force control (displacement inputs, force outputs) hybrid modeling approach via Simulink
+   
    INTEGER(IntKi), PARAMETER        :: PolyOrd  =  6                                    ! Order of the polynomial describing the mode shape
 
 
@@ -3379,6 +3387,14 @@ SUBROUTINE ReadPrimaryFile( InputFile, InputFileData, BldFile, FurlFile, TwrFile
          RETURN
       END IF
       
+      ! HybridMode - Displacement control mode, internal (i.e. normal OpenFAST) or external (i.e. Simulink)
+   CALL ReadVar( UnIn, InputFile, InputFileData%HybridMode, "HybridMode", "Hybrid control mode: {0: Internal (normal FAST routine), 1: Displacement control, or 2: Force control}", ErrStat2, ErrMsg2, UnEc)
+      CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+      IF ( ErrStat >= AbortErrLev ) THEN
+          CALL Cleanup()
+          RETURN
+      END IF 
+      
       ! DT - Requested integration time for ElastoDyn (seconds):
    CALL ReadVar( UnIn, InputFile, Line, "DT", "Requested integration time for ElastoDyn (seconds)", ErrStat2, ErrMsg2, UnEc)
       CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
@@ -4986,7 +5002,20 @@ SUBROUTINE ValidatePrimaryData( InputFileData, BD4Blades, Linearize, ErrStat, Er
       END IF
    END IF
 
-
+      ! Make sure the specified hybrid mode is valid:
+   IF ( InputFileData%HybridMode <= 2 ) THEN
+      IF ( InputFileData%HybridMode == 1 .OR. InputFileData%HybridMode == 2 ) THEN
+         IF ( .NOT. Cmpl4SFun) THEN ! Not interfacing with Simulink
+            CALL SetErrStat( ErrID_Fatal, 'HybridMode can equal '//TRIM(Num2LStr(InputFileData%HybridMode))//' only when interfaced with Simulink.'// &
+                ' Set HybridMode to 0 or interface OpenFAST with Simulink.', ErrStat, ErrMsg, RoutineName )          
+         ENDIF
+      ELSEIF ( InputFileData%HybridMode < 0 ) THEN
+          CALL SetErrStat( ErrID_Fatal, 'HybridMode must be set to 0 (internal), 1 (displacement control), or 2 (force control)',ErrStat,ErrMsg,RoutineName)
+      ENDIF
+   ELSE  ! Invalid input value
+      CALL SetErrStat( ErrID_Fatal, 'HybridMode must be set to 0 (internal), 1 (displacement control), or 2 (force control)',ErrStat,ErrMsg,RoutineName)
+   END IF
+   
       ! make sure GBoxEff is 100% for now
    IF ( .NOT. EqualRealNos( InputFileData%GBoxEff, 1.0_ReKi ) .and. InputFileData%method == method_rk4 ) &
       CALL SetErrStat( ErrID_Fatal, 'GBoxEff must be 1 (i.e., 100%) when using RK4.',ErrStat,ErrMsg,RoutineName)

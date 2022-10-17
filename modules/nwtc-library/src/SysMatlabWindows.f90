@@ -354,12 +354,16 @@ SUBROUTINE UsrAlarm()
 
 #else
    INTEGER                      :: Stat                                         ! Number of characters printed
-   INTEGER, EXTERNAL            :: mexPrintF                                    ! Matlab function to print to the command window
+#ifdef MATLAB_MEX_FILE    
+   INTEGER, EXTERNAL            :: mexPrintF                                   ! Matlab function to print to the command window
+#endif   
    CHARACTER(1024),SAVE         :: Str2                                         ! bjj: need static variable to print to Matlab command window
 
    Str2 = ' '//Str//C_NULL_CHAR  !bjj: not sure C_NULL_CHAR is necessary
+#ifdef MATLAB_MEX_FILE   
    Stat = mexPrintF( Str2 )
-   
+#endif
+
 #endif
 
    RETURN
@@ -398,7 +402,9 @@ SUBROUTINE UsrAlarm()
 
 #else
 
+#ifdef MATLAB_MEX_FILE    
    INTEGER, EXTERNAL            :: mexPrintF                                   ! Matlab function to print to the command window
+#endif   
    INTEGER                      :: Stat                                        ! Number of characters printed to the screen
    CHARACTER( 1024 ), SAVE      :: Str2   ! A temporary string (Str written with the Frm Format specification) (bjj: this apparently needs to be a static variable so it writes to the Matlab command window)
 
@@ -408,7 +414,9 @@ SUBROUTINE UsrAlarm()
       WRITE (Str2,Frm, IOSTAT=Stat)  ADJUSTL( Str )
    END IF
    Str2 = trim(Str2)//NewLine//C_NULL_CHAR  !bjj: not sure C_NULL_CHAR is necessary
+#ifdef MATLAB_MEX_FILE   
    Stat = mexPrintf( Str2 )
+#endif
    !call mexEvalString("drawnow;");  ! !bjj: may have to call this to dump string to the screen immediately.
 
 #endif

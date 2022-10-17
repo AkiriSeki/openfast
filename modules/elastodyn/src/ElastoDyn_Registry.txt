@@ -86,6 +86,7 @@ typedef	^	ED_BladeMeshInputData	ReKi	Chord	{:}	-	-	"Chord of the blade at the an
 # This is data defined in the Input File for this module (or could otherwise be passed in)
 # ..... Primary Input file data ...........................................................................................................
 typedef	ElastoDyn/ED	ED_InputFile	DbKi	DT	-	-	-	"Requested integration time for ElastoDyn"	seconds
+typedef	^	ED_InputFile	ReKi	HybridMode	-	-	-	"Hybrid control mode"	-
 typedef	^	ED_InputFile	ReKi	Gravity	-	-	-	"Gravitational acceleration"	m/s^2
 typedef	^	ED_InputFile	LOGICAL	FlapDOF1	-	-	-	"First flapwise blade mode DOF"	-
 typedef	^	ED_InputFile	LOGICAL	FlapDOF2	-	-	-	"Second flapwise blade mode DOF"	-
@@ -540,7 +541,9 @@ typedef	^	OtherStateType	IntKi	SgnLSTQ	{ED_NMX}	-	-	"history of sign of LSTQ"
 
 # ..... Misc Vars ................................................................................................................
 typedef	^	MiscVarType	ED_CoordSys	CoordSys	-	-	-	"Coordinate systems in the FAST framework"	-
+typedef	^	MiscVarType	ED_CoordSys	CoordSys_hybrid	-	-	-	"Coordinate systems in the FAST framework; for hybrid outputs to AeroDyn"
 typedef	^	MiscVarType	ED_RtHndSide	RtHS	-	-	-	"Values used in calculating the right-hand-side RtHS (and outputs)"
+typedef ^	MiscVarType	ED_RtHndSide	RtHS_hybrid	-	-	-	"Values used in calculating the right-hand-side RtHS (and outputs); for hybrid outputs to AeroDyn"
 typedef	^	MiscVarType	ReKi	AllOuts	{:}	-	-	"An array holding the value of all of the calculated (not only selected) output channels"	"see OutListParameters.xlsx spreadsheet"
 typedef	^	MiscVarType	R8Ki	AugMat	{:}{:}	-	-	"The augmented matrix used for the solution of the QD2T()s"
 typedef	^	MiscVarType	R8Ki	AugMat_factor	{:}{:}	-	-	"factored version of AugMat matrix"
@@ -555,6 +558,7 @@ typedef	^	MiscVarType	Logical	IgnoreMod	-	-	-	"whether to ignore the modulo in E
 # Time step for integration of continuous states (if a fixed-step integrator is used) and update of discrete states:
 typedef	^	ParameterType	DbKi	DT	-	-	-	"Time step for continuous state integration & discrete state update"	seconds
 typedef	^	ParameterType	DbKi	DT24	-	-	-	"=DT/24 (used in loose coupling)"	seconds
+typedef ^	ParameterType	IntKi	HybridMode	-	-	-	"Hybrid control mode"	-
 typedef	^	ParameterType	IntKi	BldNodes	-	-	-	"Number of blade nodes used in the analysis"	-
 typedef	^	ParameterType	IntKi	TipNode	-	-	-	"Index of the additional node located at the blade tip = BldNodes + 1"	-
 typedef	^	ParameterType	IntKi	NDOF	-	-	-	"Number of total degrees of freedom (DOFs)"	-
@@ -815,16 +819,32 @@ typedef	^	InputType	ReKi	BlPitchCom	{:}	-	-	"Commanded blade pitch angles"	radia
 typedef	^	InputType	ReKi	YawMom	-	-	-	"Torque transmitted through the yaw bearing"	N-m
 typedef	^	InputType	ReKi	GenTrq	-	-	-	"Electrical generator torque"	N-m
 typedef	^	InputType	ReKi	HSSBrTrqC	-	-	-	"Commanded HSS brake torque"	N-m
+typedef	^	InputType	ReKi	ExternalPtfmSurge	-	-	-	"Commanded horizontal surge translational displacement/force at platform from Simulink"	meters
+typedef	^	InputType	ReKi	ExternalPtfmSway	-	-	-	"Commanded horizontal sway translational displacement/force at platform from Simulink"	meters
+typedef	^	InputType	ReKi	ExternalPtfmHeave	-	-	-	"Commanded vertical heave translational displacement/force at of platform from Simulink"	meters
+typedef	^	InputType	ReKi	ExternalPtfmRoll	-	-	-	"Commanded roll tilt rotational displacement/moment at platform from Simulink"	radians
+typedef	^	InputType	ReKi	ExternalPtfmPitch	-	-	-	"Commanded pitch tilt rotational displacement/moment at platform from Simulink"	radians
+typedef	^	InputType	ReKi	ExternalPtfmYaw	-	-	-	"Commanded yaw rotational displacement/moment at platform from Simulink"	radians
+typedef	^	InputType	ReKi	ExternalPtfmSurgeVel	-	-	-	"Commanded horizontal surge translational velocity at platform from Simulink"	m/s
+typedef	^	InputType	ReKi	ExternalPtfmSwayVel	-	-	-	"Commanded horizontal sway translational velocity at platform from Simulink"	m/s
+typedef	^	InputType	ReKi	ExternalPtfmHeaveVel	-	-	-	"Commanded vertical heave translational velocity at of platform from Simulink"	m/s
+typedef	^	InputType	ReKi	ExternalPtfmRollVel	-	-	-	"Commanded roll tilt rotational velocity at platform from Simulink"	rad/s
+typedef	^	InputType	ReKi	ExternalPtfmPitchVel	-	-	-	"Commanded pitch tilt rotational velocity at platform from Simulink"	rad/s
+typedef	^	InputType	ReKi	ExternalPtfmYawVel	-	-	-	"Commanded yaw rotational velocity at platform from Simulink"	rad/s
 
 # ..... Outputs ...................................................................................................................
 # Define outputs that are contained on the mesh here:
 typedef	^	OutputType	MeshType	BladeLn2Mesh	{:}	-	-	"A mesh on each blade, containing positions and orientations of the blade elements"
+typedef	^	OutputType	MeshType	BladeLn2Mesh_hybrid	{:}	-	-	"A mesh on each blade, containing positions and orientations of the blade elements; for hybrid outputs to AeroDyn"
 typedef	^	OutputType	MeshType	PlatformPtMesh	-	-	-	"Platform reference point positions/orientations/velocities/accelerations"	-
 typedef	^	OutputType	MeshType	TowerLn2Mesh	-	-	-	"Tower line2 mesh with positions/orientations/velocities/accelerations"	-
+typedef	^	OutputType	MeshType	TowerLn2Mesh_hybrid	-	-	-	"Tower line2 mesh with positions/orientations/velocities/accelerations; for hybrid outputs to AeroDyn"	-
 typedef	^	OutputType	MeshType	HubPtMotion14	-	-	-	"For AeroDyn v14: motions of the hub"
 typedef	^	OutputType	MeshType	HubPtMotion	-	-	-	"For AeroDyn and Lidar(InflowWind): motions of the hub"
+typedef	^	OutputType	MeshType	HubPtMotion_hybrid	-	-	-	"For AeroDyn and Lidar(InflowWind): motions of the hub; for hybrid outputs to AeroDyn"
 typedef	^	OutputType	MeshType	BladeRootMotion14	-	-	-	"For AeroDyn v14: motions of the blade roots"
 typedef	^	OutputType	MeshType	BladeRootMotion	{:}	-	-	"For AeroDyn/BeamDyn: motions at the blade roots"
+typedef	^	OutputType	MeshType	BladeRootMotion_hybrid	{:}	-	-	"For AeroDyn/BeamDyn: motions at the blade roots; for hybrid outputs to AeroDyn"
 typedef	^	OutputType	MeshType	RotorFurlMotion14	-	-	-	"For AeroDyn14: motions of the rotor furl point."
 typedef	^	OutputType	MeshType	NacelleMotion	-	-	-	"For AeroDyn14 & ServoDyn/TMD: motions of the nacelle."
 typedef	^	OutputType	MeshType	TowerBaseMotion14	-	-	-	"For AeroDyn 14: motions of the tower base"

@@ -27,10 +27,14 @@
  * its associated macro definitions.
  */
 #include "simstruc.h"
-#include "mex.h"     // for mexPutVariable
-#include "matrix.h"  // for mxCreateDoubleScalar
 #include "FAST_Library.h"
 #include <math.h>
+
+#ifdef MATLAB_MEX_FILE  // @mcd: these header files are not allowed for code generation / Simulink-RT
+#include "mex.h"     // for mexPutVariable
+#include "matrix.h"  // for mxCreateDoubleScalar
+#endif
+
 #define min(a,b) fmin(a,b)
 
 
@@ -51,6 +55,8 @@ static int NumAddInputs = 0;  // number of additional inputs
 static int NumOutputs = 1;
 static int ErrStat = 0;
 static char ErrMsg[INTERFACE_STRING_LENGTH];        // make sure this is the same size as IntfStrLen in FAST_Library.f90
+static int ErrStat2 = 0;
+static char ErrMsg2[INTERFACE_STRING_LENGTH];       // make sure this is the same size as IntfStrLen in FAST_Library.f90
 static char InputFileName[INTERFACE_STRING_LENGTH]; // make sure this is the same size as IntfStrLen in FAST_Library.f90
 static int n_t_global = -2;  // counter to determine which fixed-step simulation time we are at currently (start at -2 for initialization)
 static int AbortErrLev = ErrID_Fatal;      // abort error level; compare with NWTC Library
@@ -142,9 +148,12 @@ static void mdlInitializeSizes(SimStruct *S)
    //static char OutList[MAXIMUM_OUTPUTS][CHANNEL_LENGTH + 1];
    static char OutList[CHANNEL_LENGTH + 1];
    double *AdditionalInitInputs;
+
+   #ifdef MATLAB_MEX_FILE
    mxArray *pm, *chrAry;
    mwSize m, n;
    mwIndex indx;
+   #endif
 
    if (n_t_global == -2) {
 
@@ -197,13 +206,16 @@ static void mdlInitializeSizes(SimStruct *S)
     /*  ---------------------------------------------  */
     //   strcpy(InputFileName, "../../CertTest/Test01.fst");
        FAST_AllocateTurbines(&nTurbines, &ErrStat, ErrMsg);
-       FAST_Sizes(&iTurb, &TMax, InitInputAry, InputFileName, &AbortErrLev, &NumOutputs, &dt, &ErrStat, ErrMsg, ChannelNames);
+	   if (checkError(S)) return;
 
+       FAST_Sizes(&iTurb, &TMax, InitInputAry, InputFileName, &AbortErrLev, &NumOutputs, &dt, &ErrStat, ErrMsg, ChannelNames);
        n_t_global = -1;
        if (checkError(S)) return;
 
 
        // set DT in the Matlab workspace (necessary for Simulink block solver options)
+	   // @mcd: this functionality isn't supported in code genertaion/Simulink-RT and is only done if used as a MEX file
+       #ifdef MATLAB_MEX_FILE
        pm = mxCreateDoubleScalar(dt);
        ErrStat = mexPutVariable("base", "DT", pm);
        mxDestroyArray(pm);
@@ -216,19 +228,34 @@ static void mdlInitializeSizes(SimStruct *S)
 
   
        // put the names of the output channels in a cell-array variable called "OutList" in the base matlab workspace
+       // @mcd: I duplicated this section to hack a fix for the two-variable OutList problem.
        m = NumOutputs;
        n = 1;
        pm = mxCreateCellMatrix(m, n);
-       for (i = 0; i < NumOutputs; i++){
-          j = CHANNEL_LENGTH - 1;
-          while (ChannelNames[i*CHANNEL_LENGTH + j] == ' '){
+       for (i = 0; i < NumOutputs; i = i+2){ //@mcd: increment was +1
+           // @mcd: get first variable name
+          j = CHANNEL_LENGTH - 11; // @mcd: was -1
+          while (ChannelNames[i*(CHANNEL_LENGTH-10) + j] == ' '){
              j--;
           }
-          strncpy(&OutList[0], &ChannelNames[i*CHANNEL_LENGTH], j+1);
+          strncpy(&OutList[0], &ChannelNames[i*(CHANNEL_LENGTH-10)], j+1);
           OutList[j + 1] = '\0';
 
           chrAry = mxCreateString(OutList);
           indx = i;
+          mxSetCell(pm, indx, chrAry);
+          //mxDestroyArray(chrAry);
+
+          // @mcd: get second variable name
+          j = CHANNEL_LENGTH - 11; // @mcd: was -1
+          while (ChannelNames[(i+1)*(CHANNEL_LENGTH-10) + j] == ' ') { //@mcd: added +10
+              j--;
+          }
+          strncpy(&OutList[0], &ChannelNames[(i+1)*(CHANNEL_LENGTH-10)], j+1); //@mcd: added +10
+          OutList[j + 1] = '\0';
+
+          chrAry = mxCreateString(OutList);
+          indx = i+1;
           mxSetCell(pm, indx, chrAry);
           //mxDestroyArray(chrAry);
        }
@@ -241,6 +268,7 @@ static void mdlInitializeSizes(SimStruct *S)
           checkError(S);
           return;
        }
+       #endif
        //  ---------------------------------------------  
     
 
@@ -447,6 +475,10 @@ static void mdlTerminate(SimStruct *S)
       FAST_End(&iTurb, &tr);
       n_t_global = -2;
    }  
+   FAST_DeallocateTurbines(&ErrStat2, ErrMsg2);
+   if (ErrStat2 != ErrID_None) {
+	   ssPrintf("\n%s\n", ErrMsg2);
+   }
 
 }
 

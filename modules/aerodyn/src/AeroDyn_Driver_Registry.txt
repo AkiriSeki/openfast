@@ -51,6 +51,8 @@ typedef   ^                         ^             DbKi                   InputTi
 #
 # ..... Data for driver simulation .......................................................................................................
 typedef   ^                        Dvr_SimData   character(1024)         AD_InputFile     -      -     -   "Name of AeroDyn input file" -
+typedef   ^                         ^            character(1024)         Phys_HubFile     -      -     -   "Name of outputted hub data file from the physical model"
+typedef   ^                         ^            character(1024)         Phys_TwrFile     -      -     -   "Name of outputted tower data file from the physical model"
 typedef   ^                         ^            IntKi                   numBlades        -      -     -   "number of blades on turbine" "-"
 typedef   ^                         ^            ReKi                    hubRad           -      -     -   "Hub radius" "m"
 typedef   ^                         ^            ReKi                    hubHt            -      -     -   "Hub height" "m"

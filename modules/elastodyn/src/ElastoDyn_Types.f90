@@ -108,6 +108,7 @@ IMPLICIT NONE
 ! =========  ED_InputFile  =======
   TYPE, PUBLIC :: ED_InputFile
     REAL(DbKi)  :: DT      !< Requested integration time for ElastoDyn [seconds]
+    REAL(ReKi)  :: HybridMode      !< Hybrid control mode [-]
     REAL(ReKi)  :: Gravity      !< Gravitational acceleration [m/s^2]
     LOGICAL  :: FlapDOF1      !< First flapwise blade mode DOF [-]
     LOGICAL  :: FlapDOF2      !< Second flapwise blade mode DOF [-]
@@ -546,7 +547,9 @@ IMPLICIT NONE
 ! =========  ED_MiscVarType  =======
   TYPE, PUBLIC :: ED_MiscVarType
     TYPE(ED_CoordSys)  :: CoordSys      !< Coordinate systems in the FAST framework [-]
+    TYPE(ED_CoordSys)  :: CoordSys_hybrid      !< Coordinate systems in the FAST framework; for hybrid outputs to AeroDyn [-]
     TYPE(ED_RtHndSide)  :: RtHS      !< Values used in calculating the right-hand-side RtHS (and outputs) [-]
+    TYPE(ED_RtHndSide)  :: RtHS_hybrid      !< Values used in calculating the right-hand-side RtHS (and outputs); for hybrid outputs to AeroDyn [-]
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: AllOuts      !< An array holding the value of all of the calculated (not only selected) output channels [see OutListParameters.xlsx spreadsheet]
     REAL(R8Ki) , DIMENSION(:,:), ALLOCATABLE  :: AugMat      !< The augmented matrix used for the solution of the QD2T()s [-]
     REAL(R8Ki) , DIMENSION(:,:), ALLOCATABLE  :: AugMat_factor      !< factored version of AugMat matrix [-]
@@ -561,6 +564,7 @@ IMPLICIT NONE
   TYPE, PUBLIC :: ED_ParameterType
     REAL(DbKi)  :: DT      !< Time step for continuous state integration & discrete state update [seconds]
     REAL(DbKi)  :: DT24      !< =DT/24 (used in loose coupling) [seconds]
+    INTEGER(IntKi)  :: HybridMode      !< Hybrid control mode [-]
     INTEGER(IntKi)  :: BldNodes      !< Number of blade nodes used in the analysis [-]
     INTEGER(IntKi)  :: TipNode      !< Index of the additional node located at the blade tip = BldNodes + 1 [-]
     INTEGER(IntKi)  :: NDOF      !< Number of total degrees of freedom (DOFs) [-]
@@ -819,17 +823,33 @@ IMPLICIT NONE
     REAL(ReKi)  :: YawMom      !< Torque transmitted through the yaw bearing [N-m]
     REAL(ReKi)  :: GenTrq      !< Electrical generator torque [N-m]
     REAL(ReKi)  :: HSSBrTrqC      !< Commanded HSS brake torque [N-m]
+    REAL(ReKi)  :: ExternalPtfmSurge      !< Commanded horizontal surge translational displacement/force at platform from Simulink [meters]
+    REAL(ReKi)  :: ExternalPtfmSway      !< Commanded horizontal sway translational displacement/force at platform from Simulink [meters]
+    REAL(ReKi)  :: ExternalPtfmHeave      !< Commanded vertical heave translational displacement/force at of platform from Simulink [meters]
+    REAL(ReKi)  :: ExternalPtfmRoll      !< Commanded roll tilt rotational displacement/moment at platform from Simulink [radians]
+    REAL(ReKi)  :: ExternalPtfmPitch      !< Commanded pitch tilt rotational displacement/moment at platform from Simulink [radians]
+    REAL(ReKi)  :: ExternalPtfmYaw      !< Commanded yaw rotational displacement/moment at platform from Simulink [radians]
+    REAL(ReKi)  :: ExternalPtfmSurgeVel      !< Commanded horizontal surge translational velocity at platform from Simulink [m/s]
+    REAL(ReKi)  :: ExternalPtfmSwayVel      !< Commanded horizontal sway translational velocity at platform from Simulink [m/s]
+    REAL(ReKi)  :: ExternalPtfmHeaveVel      !< Commanded vertical heave translational velocity at of platform from Simulink [m/s]
+    REAL(ReKi)  :: ExternalPtfmRollVel      !< Commanded roll tilt rotational velocity at platform from Simulink [rad/s]
+    REAL(ReKi)  :: ExternalPtfmPitchVel      !< Commanded pitch tilt rotational velocity at platform from Simulink [rad/s]
+    REAL(ReKi)  :: ExternalPtfmYawVel      !< Commanded yaw rotational velocity at platform from Simulink [rad/s]
   END TYPE ED_InputType
 ! =======================
 ! =========  ED_OutputType  =======
   TYPE, PUBLIC :: ED_OutputType
     TYPE(MeshType) , DIMENSION(:), ALLOCATABLE  :: BladeLn2Mesh      !< A mesh on each blade, containing positions and orientations of the blade elements [-]
+    TYPE(MeshType) , DIMENSION(:), ALLOCATABLE  :: BladeLn2Mesh_hybrid      !< A mesh on each blade, containing positions and orientations of the blade elements; for hybrid outputs to AeroDyn [-]
     TYPE(MeshType)  :: PlatformPtMesh      !< Platform reference point positions/orientations/velocities/accelerations [-]
     TYPE(MeshType)  :: TowerLn2Mesh      !< Tower line2 mesh with positions/orientations/velocities/accelerations [-]
+    TYPE(MeshType)  :: TowerLn2Mesh_hybrid      !< Tower line2 mesh with positions/orientations/velocities/accelerations; for hybrid outputs to AeroDyn [-]
     TYPE(MeshType)  :: HubPtMotion14      !< For AeroDyn v14: motions of the hub [-]
     TYPE(MeshType)  :: HubPtMotion      !< For AeroDyn and Lidar(InflowWind): motions of the hub [-]
+    TYPE(MeshType)  :: HubPtMotion_hybrid      !< For AeroDyn and Lidar(InflowWind): motions of the hub; for hybrid outputs to AeroDyn [-]
     TYPE(MeshType)  :: BladeRootMotion14      !< For AeroDyn v14: motions of the blade roots [-]
     TYPE(MeshType) , DIMENSION(:), ALLOCATABLE  :: BladeRootMotion      !< For AeroDyn/BeamDyn: motions at the blade roots [-]
+    TYPE(MeshType) , DIMENSION(:), ALLOCATABLE  :: BladeRootMotion_hybrid      !< For AeroDyn/BeamDyn: motions at the blade roots; for hybrid outputs to AeroDyn [-]
     TYPE(MeshType)  :: RotorFurlMotion14      !< For AeroDyn14: motions of the rotor furl point. [-]
     TYPE(MeshType)  :: NacelleMotion      !< For AeroDyn14 & ServoDyn/TMD: motions of the nacelle. [-]
     TYPE(MeshType)  :: TowerBaseMotion14      !< For AeroDyn 14: motions of the tower base [-]
@@ -3654,6 +3674,7 @@ ENDIF
    ErrStat = ErrID_None
    ErrMsg  = ""
     DstInputFileData%DT = SrcInputFileData%DT
+    DstInputFileData%HybridMode = SrcInputFileData%HybridMode
     DstInputFileData%Gravity = SrcInputFileData%Gravity
     DstInputFileData%FlapDOF1 = SrcInputFileData%FlapDOF1
     DstInputFileData%FlapDOF2 = SrcInputFileData%FlapDOF2
@@ -4174,6 +4195,7 @@ ENDIF
   Db_BufSz  = 0
   Int_BufSz  = 0
       Db_BufSz   = Db_BufSz   + 1  ! DT
+      Re_BufSz   = Re_BufSz   + 1  ! HybridMode
       Re_BufSz   = Re_BufSz   + 1  ! Gravity
       Int_BufSz  = Int_BufSz  + 1  ! FlapDOF1
       Int_BufSz  = Int_BufSz  + 1  ! FlapDOF2
@@ -4497,6 +4519,8 @@ ENDIF
 
       DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) = InData%DT
       Db_Xferred   = Db_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HybridMode
+      Re_Xferred   = Re_Xferred   + 1
       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%Gravity
       Re_Xferred   = Re_Xferred   + 1
       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%FlapDOF1 , IntKiBuf(1), 1)
@@ -5170,6 +5194,8 @@ ENDIF
   Int_Xferred  = 1
       OutData%DT = DbKiBuf( Db_Xferred ) 
       Db_Xferred   = Db_Xferred + 1
+      OutData%HybridMode = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
       OutData%Gravity = ReKiBuf( Re_Xferred )
       Re_Xferred   = Re_Xferred + 1
       OutData%FlapDOF1 = TRANSFER( IntKiBuf( Int_Xferred ), mask0 )
@@ -11168,14 +11194,8 @@ ENDIF
     IntKiBuf( Int_Xferred + 1) = UBOUND(InData%AngVelEM,3)
     Int_Xferred = Int_Xferred + 2
 
-      DO i3 = LBOUND(InData%AngVelEM,3), UBOUND(InData%AngVelEM,3)
-        DO i2 = LBOUND(InData%AngVelEM,2), UBOUND(InData%AngVelEM,2)
-          DO i1 = LBOUND(InData%AngVelEM,1), UBOUND(InData%AngVelEM,1)
-            ReKiBuf(Re_Xferred) = InData%AngVelEM(i1,i2,i3)
-            Re_Xferred = Re_Xferred + 1
-          END DO
-        END DO
-      END DO
+      IF (SIZE(InData%AngVelEM)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%AngVelEM))-1 ) = PACK(InData%AngVelEM,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%AngVelEM)
   END IF
   IF ( .NOT. ALLOCATED(InData%PAngVelEN) ) THEN
     IntKiBuf( Int_Xferred ) = 0
@@ -12952,14 +12972,15 @@ ENDIF
        CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%AngVelEM.', ErrStat, ErrMsg,RoutineName)
        RETURN
     END IF
-      DO i3 = LBOUND(OutData%AngVelEM,3), UBOUND(OutData%AngVelEM,3)
-        DO i2 = LBOUND(OutData%AngVelEM,2), UBOUND(OutData%AngVelEM,2)
-          DO i1 = LBOUND(OutData%AngVelEM,1), UBOUND(OutData%AngVelEM,1)
-            OutData%AngVelEM(i1,i2,i3) = ReKiBuf(Re_Xferred)
-            Re_Xferred = Re_Xferred + 1
-          END DO
-        END DO
-      END DO
+    ALLOCATE(mask3(i1_l:i1_u,i2_l:i2_u,i3_l:i3_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask3.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask3 = .TRUE. 
+      IF (SIZE(OutData%AngVelEM)>0) OutData%AngVelEM = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%AngVelEM))-1 ), mask3, 0.0_ReKi )
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%AngVelEM)
+    DEALLOCATE(mask3)
   END IF
   IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! PAngVelEN not allocated
     Int_Xferred = Int_Xferred + 1
@@ -15726,7 +15747,13 @@ ENDIF
       CALL ED_Copycoordsys( SrcMiscData%CoordSys, DstMiscData%CoordSys, CtrlCode, ErrStat2, ErrMsg2 )
          CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
          IF (ErrStat>=AbortErrLev) RETURN
+      CALL ED_Copycoordsys( SrcMiscData%CoordSys_hybrid, DstMiscData%CoordSys_hybrid, CtrlCode, ErrStat2, ErrMsg2 )
+         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+         IF (ErrStat>=AbortErrLev) RETURN
       CALL ED_Copyrthndside( SrcMiscData%RtHS, DstMiscData%RtHS, CtrlCode, ErrStat2, ErrMsg2 )
+         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+         IF (ErrStat>=AbortErrLev) RETURN
+      CALL ED_Copyrthndside( SrcMiscData%RtHS_hybrid, DstMiscData%RtHS_hybrid, CtrlCode, ErrStat2, ErrMsg2 )
          CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
          IF (ErrStat>=AbortErrLev) RETURN
 IF (ALLOCATED(SrcMiscData%AllOuts)) THEN
@@ -15830,7 +15857,9 @@ ENDIF
   ErrStat = ErrID_None
   ErrMsg  = ""
   CALL ED_Destroycoordsys( MiscData%CoordSys, ErrStat, ErrMsg )
+  CALL ED_Destroycoordsys( MiscData%CoordSys_hybrid, ErrStat, ErrMsg )
   CALL ED_Destroyrthndside( MiscData%RtHS, ErrStat, ErrMsg )
+  CALL ED_Destroyrthndside( MiscData%RtHS_hybrid, ErrStat, ErrMsg )
 IF (ALLOCATED(MiscData%AllOuts)) THEN
   DEALLOCATE(MiscData%AllOuts)
 ENDIF
@@ -15907,6 +15936,23 @@ ENDIF
          Int_BufSz = Int_BufSz + SIZE( Int_Buf )
          DEALLOCATE(Int_Buf)
       END IF
+      Int_BufSz   = Int_BufSz + 3  ! CoordSys_hybrid: size of buffers for each call to pack subtype
+      CALL ED_Packcoordsys( Re_Buf, Db_Buf, Int_Buf, InData%CoordSys_hybrid, ErrStat2, ErrMsg2, .TRUE. ) ! CoordSys_hybrid 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN ! CoordSys_hybrid
+         Re_BufSz  = Re_BufSz  + SIZE( Re_Buf  )
+         DEALLOCATE(Re_Buf)
+      END IF
+      IF(ALLOCATED(Db_Buf)) THEN ! CoordSys_hybrid
+         Db_BufSz  = Db_BufSz  + SIZE( Db_Buf  )
+         DEALLOCATE(Db_Buf)
+      END IF
+      IF(ALLOCATED(Int_Buf)) THEN ! CoordSys_hybrid
+         Int_BufSz = Int_BufSz + SIZE( Int_Buf )
+         DEALLOCATE(Int_Buf)
+      END IF
       Int_BufSz   = Int_BufSz + 3  ! RtHS: size of buffers for each call to pack subtype
       CALL ED_Packrthndside( Re_Buf, Db_Buf, Int_Buf, InData%RtHS, ErrStat2, ErrMsg2, .TRUE. ) ! RtHS 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
@@ -15921,6 +15967,23 @@ ENDIF
          DEALLOCATE(Db_Buf)
       END IF
       IF(ALLOCATED(Int_Buf)) THEN ! RtHS
+         Int_BufSz = Int_BufSz + SIZE( Int_Buf )
+         DEALLOCATE(Int_Buf)
+      END IF
+      Int_BufSz   = Int_BufSz + 3  ! RtHS_hybrid: size of buffers for each call to pack subtype
+      CALL ED_Packrthndside( Re_Buf, Db_Buf, Int_Buf, InData%RtHS_hybrid, ErrStat2, ErrMsg2, .TRUE. ) ! RtHS_hybrid 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN ! RtHS_hybrid
+         Re_BufSz  = Re_BufSz  + SIZE( Re_Buf  )
+         DEALLOCATE(Re_Buf)
+      END IF
+      IF(ALLOCATED(Db_Buf)) THEN ! RtHS_hybrid
+         Db_BufSz  = Db_BufSz  + SIZE( Db_Buf  )
+         DEALLOCATE(Db_Buf)
+      END IF
+      IF(ALLOCATED(Int_Buf)) THEN ! RtHS_hybrid
          Int_BufSz = Int_BufSz + SIZE( Int_Buf )
          DEALLOCATE(Int_Buf)
       END IF
@@ -16015,7 +16078,63 @@ ENDIF
       ELSE
         IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
       ENDIF
+      CALL ED_Packcoordsys( Re_Buf, Db_Buf, Int_Buf, InData%CoordSys_hybrid, ErrStat2, ErrMsg2, OnlySize ) ! CoordSys_hybrid 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Re_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Re_Buf) > 0) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_Buf)-1 ) = Re_Buf
+        Re_Xferred = Re_Xferred + SIZE(Re_Buf)
+        DEALLOCATE(Re_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Db_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Db_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Db_Buf) > 0) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_Buf)-1 ) = Db_Buf
+        Db_Xferred = Db_Xferred + SIZE(Db_Buf)
+        DEALLOCATE(Db_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Int_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Int_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Int_Buf) > 0) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_Buf)-1 ) = Int_Buf
+        Int_Xferred = Int_Xferred + SIZE(Int_Buf)
+        DEALLOCATE(Int_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
       CALL ED_Packrthndside( Re_Buf, Db_Buf, Int_Buf, InData%RtHS, ErrStat2, ErrMsg2, OnlySize ) ! RtHS 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Re_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Re_Buf) > 0) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_Buf)-1 ) = Re_Buf
+        Re_Xferred = Re_Xferred + SIZE(Re_Buf)
+        DEALLOCATE(Re_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Db_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Db_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Db_Buf) > 0) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_Buf)-1 ) = Db_Buf
+        Db_Xferred = Db_Xferred + SIZE(Db_Buf)
+        DEALLOCATE(Db_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Int_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Int_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Int_Buf) > 0) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_Buf)-1 ) = Int_Buf
+        Int_Xferred = Int_Xferred + SIZE(Int_Buf)
+        DEALLOCATE(Int_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      CALL ED_Packrthndside( Re_Buf, Db_Buf, Int_Buf, InData%RtHS_hybrid, ErrStat2, ErrMsg2, OnlySize ) ! RtHS_hybrid 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
 
@@ -16251,7 +16370,87 @@ ENDIF
         Int_Buf = IntKiBuf( Int_Xferred:Int_Xferred+Buf_size-1 )
         Int_Xferred = Int_Xferred + Buf_size
       END IF
+      CALL ED_Unpackcoordsys( Re_Buf, Db_Buf, Int_Buf, OutData%CoordSys_hybrid, ErrStat2, ErrMsg2 ) ! CoordSys_hybrid 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf )) DEALLOCATE(Re_Buf )
+      IF(ALLOCATED(Db_Buf )) DEALLOCATE(Db_Buf )
+      IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Re_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Re_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Re_Buf = ReKiBuf( Re_Xferred:Re_Xferred+Buf_size-1 )
+        Re_Xferred = Re_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Db_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Db_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Db_Buf = DbKiBuf( Db_Xferred:Db_Xferred+Buf_size-1 )
+        Db_Xferred = Db_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Int_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Int_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Int_Buf = IntKiBuf( Int_Xferred:Int_Xferred+Buf_size-1 )
+        Int_Xferred = Int_Xferred + Buf_size
+      END IF
       CALL ED_Unpackrthndside( Re_Buf, Db_Buf, Int_Buf, OutData%RtHS, ErrStat2, ErrMsg2 ) ! RtHS 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf )) DEALLOCATE(Re_Buf )
+      IF(ALLOCATED(Db_Buf )) DEALLOCATE(Db_Buf )
+      IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Re_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Re_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Re_Buf = ReKiBuf( Re_Xferred:Re_Xferred+Buf_size-1 )
+        Re_Xferred = Re_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Db_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Db_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Db_Buf = DbKiBuf( Db_Xferred:Db_Xferred+Buf_size-1 )
+        Db_Xferred = Db_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Int_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Int_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Int_Buf = IntKiBuf( Int_Xferred:Int_Xferred+Buf_size-1 )
+        Int_Xferred = Int_Xferred + Buf_size
+      END IF
+      CALL ED_Unpackrthndside( Re_Buf, Db_Buf, Int_Buf, OutData%RtHS_hybrid, ErrStat2, ErrMsg2 ) ! RtHS_hybrid 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
 
@@ -16450,6 +16649,7 @@ ENDIF
    ErrMsg  = ""
     DstParamData%DT = SrcParamData%DT
     DstParamData%DT24 = SrcParamData%DT24
+    DstParamData%HybridMode = SrcParamData%HybridMode
     DstParamData%BldNodes = SrcParamData%BldNodes
     DstParamData%TipNode = SrcParamData%TipNode
     DstParamData%NDOF = SrcParamData%NDOF
@@ -17901,6 +18101,7 @@ ENDIF
   Int_BufSz  = 0
       Db_BufSz   = Db_BufSz   + 1  ! DT
       Db_BufSz   = Db_BufSz   + 1  ! DT24
+      Int_BufSz  = Int_BufSz  + 1  ! HybridMode
       Int_BufSz  = Int_BufSz  + 1  ! BldNodes
       Int_BufSz  = Int_BufSz  + 1  ! TipNode
       Int_BufSz  = Int_BufSz  + 1  ! NDOF
@@ -18506,6 +18707,8 @@ ENDIF
       Db_Xferred   = Db_Xferred   + 1
       DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) = InData%DT24
       Db_Xferred   = Db_Xferred   + 1
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%HybridMode
+      Int_Xferred   = Int_Xferred   + 1
       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%BldNodes
       Int_Xferred   = Int_Xferred   + 1
       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%TipNode
@@ -20081,6 +20284,8 @@ ENDIF
       Db_Xferred   = Db_Xferred + 1
       OutData%DT24 = DbKiBuf( Db_Xferred ) 
       Db_Xferred   = Db_Xferred + 1
+      OutData%HybridMode = IntKiBuf( Int_Xferred ) 
+      Int_Xferred   = Int_Xferred + 1
       OutData%BldNodes = IntKiBuf( Int_Xferred ) 
       Int_Xferred   = Int_Xferred + 1
       OutData%TipNode = IntKiBuf( Int_Xferred ) 
@@ -22533,6 +22738,18 @@ ENDIF
     DstInputData%YawMom = SrcInputData%YawMom
     DstInputData%GenTrq = SrcInputData%GenTrq
     DstInputData%HSSBrTrqC = SrcInputData%HSSBrTrqC
+    DstInputData%ExternalPtfmSurge = SrcInputData%ExternalPtfmSurge
+    DstInputData%ExternalPtfmSway = SrcInputData%ExternalPtfmSway
+    DstInputData%ExternalPtfmHeave = SrcInputData%ExternalPtfmHeave
+    DstInputData%ExternalPtfmRoll = SrcInputData%ExternalPtfmRoll
+    DstInputData%ExternalPtfmPitch = SrcInputData%ExternalPtfmPitch
+    DstInputData%ExternalPtfmYaw = SrcInputData%ExternalPtfmYaw
+    DstInputData%ExternalPtfmSurgeVel = SrcInputData%ExternalPtfmSurgeVel
+    DstInputData%ExternalPtfmSwayVel = SrcInputData%ExternalPtfmSwayVel
+    DstInputData%ExternalPtfmHeaveVel = SrcInputData%ExternalPtfmHeaveVel
+    DstInputData%ExternalPtfmRollVel = SrcInputData%ExternalPtfmRollVel
+    DstInputData%ExternalPtfmPitchVel = SrcInputData%ExternalPtfmPitchVel
+    DstInputData%ExternalPtfmYawVel = SrcInputData%ExternalPtfmYawVel
  END SUBROUTINE ED_CopyInput
 
  SUBROUTINE ED_DestroyInput( InputData, ErrStat, ErrMsg )
@@ -22703,6 +22920,18 @@ ENDIF
       Re_BufSz   = Re_BufSz   + 1  ! YawMom
       Re_BufSz   = Re_BufSz   + 1  ! GenTrq
       Re_BufSz   = Re_BufSz   + 1  ! HSSBrTrqC
+      Re_BufSz   = Re_BufSz   + 1  ! ExternalPtfmSurge
+      Re_BufSz   = Re_BufSz   + 1  ! ExternalPtfmSway
+      Re_BufSz   = Re_BufSz   + 1  ! ExternalPtfmHeave
+      Re_BufSz   = Re_BufSz   + 1  ! ExternalPtfmRoll
+      Re_BufSz   = Re_BufSz   + 1  ! ExternalPtfmPitch
+      Re_BufSz   = Re_BufSz   + 1  ! ExternalPtfmYaw
+      Re_BufSz   = Re_BufSz   + 1  ! ExternalPtfmSurgeVel
+      Re_BufSz   = Re_BufSz   + 1  ! ExternalPtfmSwayVel
+      Re_BufSz   = Re_BufSz   + 1  ! ExternalPtfmHeaveVel
+      Re_BufSz   = Re_BufSz   + 1  ! ExternalPtfmRollVel
+      Re_BufSz   = Re_BufSz   + 1  ! ExternalPtfmPitchVel
+      Re_BufSz   = Re_BufSz   + 1  ! ExternalPtfmYawVel
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -22922,6 +23151,30 @@ ENDIF
       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%GenTrq
       Re_Xferred   = Re_Xferred   + 1
       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HSSBrTrqC
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%ExternalPtfmSurge
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%ExternalPtfmSway
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%ExternalPtfmHeave
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%ExternalPtfmRoll
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%ExternalPtfmPitch
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%ExternalPtfmYaw
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%ExternalPtfmSurgeVel
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%ExternalPtfmSwayVel
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%ExternalPtfmHeaveVel
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%ExternalPtfmRollVel
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%ExternalPtfmPitchVel
+      Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%ExternalPtfmYawVel
       Re_Xferred   = Re_Xferred   + 1
  END SUBROUTINE ED_PackInput
 
@@ -23247,6 +23500,30 @@ ENDIF
       Re_Xferred   = Re_Xferred + 1
       OutData%HSSBrTrqC = ReKiBuf( Re_Xferred )
       Re_Xferred   = Re_Xferred + 1
+      OutData%ExternalPtfmSurge = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%ExternalPtfmSway = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%ExternalPtfmHeave = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%ExternalPtfmRoll = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%ExternalPtfmPitch = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%ExternalPtfmYaw = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%ExternalPtfmSurgeVel = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%ExternalPtfmSwayVel = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%ExternalPtfmHeaveVel = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%ExternalPtfmRollVel = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%ExternalPtfmPitchVel = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
+      OutData%ExternalPtfmYawVel = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
  END SUBROUTINE ED_UnPackInput
 
  SUBROUTINE ED_CopyOutput( SrcOutputData, DstOutputData, CtrlCode, ErrStat, ErrMsg )
@@ -23280,16 +23557,38 @@ IF (ALLOCATED(SrcOutputData%BladeLn2Mesh)) THEN
          IF (ErrStat>=AbortErrLev) RETURN
     ENDDO
 ENDIF
+IF (ALLOCATED(SrcOutputData%BladeLn2Mesh_hybrid)) THEN
+  i1_l = LBOUND(SrcOutputData%BladeLn2Mesh_hybrid,1)
+  i1_u = UBOUND(SrcOutputData%BladeLn2Mesh_hybrid,1)
+  IF (.NOT. ALLOCATED(DstOutputData%BladeLn2Mesh_hybrid)) THEN 
+    ALLOCATE(DstOutputData%BladeLn2Mesh_hybrid(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstOutputData%BladeLn2Mesh_hybrid.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+  END IF
+    DO i1 = LBOUND(SrcOutputData%BladeLn2Mesh_hybrid,1), UBOUND(SrcOutputData%BladeLn2Mesh_hybrid,1)
+      CALL MeshCopy( SrcOutputData%BladeLn2Mesh_hybrid(i1), DstOutputData%BladeLn2Mesh_hybrid(i1), CtrlCode, ErrStat2, ErrMsg2 )
+         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+         IF (ErrStat>=AbortErrLev) RETURN
+    ENDDO
+ENDIF
       CALL MeshCopy( SrcOutputData%PlatformPtMesh, DstOutputData%PlatformPtMesh, CtrlCode, ErrStat2, ErrMsg2 )
          CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
          IF (ErrStat>=AbortErrLev) RETURN
       CALL MeshCopy( SrcOutputData%TowerLn2Mesh, DstOutputData%TowerLn2Mesh, CtrlCode, ErrStat2, ErrMsg2 )
          CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
          IF (ErrStat>=AbortErrLev) RETURN
+      CALL MeshCopy( SrcOutputData%TowerLn2Mesh_hybrid, DstOutputData%TowerLn2Mesh_hybrid, CtrlCode, ErrStat2, ErrMsg2 )
+         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+         IF (ErrStat>=AbortErrLev) RETURN
       CALL MeshCopy( SrcOutputData%HubPtMotion14, DstOutputData%HubPtMotion14, CtrlCode, ErrStat2, ErrMsg2 )
          CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
          IF (ErrStat>=AbortErrLev) RETURN
       CALL MeshCopy( SrcOutputData%HubPtMotion, DstOutputData%HubPtMotion, CtrlCode, ErrStat2, ErrMsg2 )
+         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+         IF (ErrStat>=AbortErrLev) RETURN
+      CALL MeshCopy( SrcOutputData%HubPtMotion_hybrid, DstOutputData%HubPtMotion_hybrid, CtrlCode, ErrStat2, ErrMsg2 )
          CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
          IF (ErrStat>=AbortErrLev) RETURN
       CALL MeshCopy( SrcOutputData%BladeRootMotion14, DstOutputData%BladeRootMotion14, CtrlCode, ErrStat2, ErrMsg2 )
@@ -23307,6 +23606,22 @@ IF (ALLOCATED(SrcOutputData%BladeRootMotion)) THEN
   END IF
     DO i1 = LBOUND(SrcOutputData%BladeRootMotion,1), UBOUND(SrcOutputData%BladeRootMotion,1)
       CALL MeshCopy( SrcOutputData%BladeRootMotion(i1), DstOutputData%BladeRootMotion(i1), CtrlCode, ErrStat2, ErrMsg2 )
+         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+         IF (ErrStat>=AbortErrLev) RETURN
+    ENDDO
+ENDIF
+IF (ALLOCATED(SrcOutputData%BladeRootMotion_hybrid)) THEN
+  i1_l = LBOUND(SrcOutputData%BladeRootMotion_hybrid,1)
+  i1_u = UBOUND(SrcOutputData%BladeRootMotion_hybrid,1)
+  IF (.NOT. ALLOCATED(DstOutputData%BladeRootMotion_hybrid)) THEN 
+    ALLOCATE(DstOutputData%BladeRootMotion_hybrid(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstOutputData%BladeRootMotion_hybrid.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+  END IF
+    DO i1 = LBOUND(SrcOutputData%BladeRootMotion_hybrid,1), UBOUND(SrcOutputData%BladeRootMotion_hybrid,1)
+      CALL MeshCopy( SrcOutputData%BladeRootMotion_hybrid(i1), DstOutputData%BladeRootMotion_hybrid(i1), CtrlCode, ErrStat2, ErrMsg2 )
          CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
          IF (ErrStat>=AbortErrLev) RETURN
     ENDDO
@@ -23384,16 +23699,30 @@ DO i1 = LBOUND(OutputData%BladeLn2Mesh,1), UBOUND(OutputData%BladeLn2Mesh,1)
 ENDDO
   DEALLOCATE(OutputData%BladeLn2Mesh)
 ENDIF
+IF (ALLOCATED(OutputData%BladeLn2Mesh_hybrid)) THEN
+DO i1 = LBOUND(OutputData%BladeLn2Mesh_hybrid,1), UBOUND(OutputData%BladeLn2Mesh_hybrid,1)
+  CALL MeshDestroy( OutputData%BladeLn2Mesh_hybrid(i1), ErrStat, ErrMsg )
+ENDDO
+  DEALLOCATE(OutputData%BladeLn2Mesh_hybrid)
+ENDIF
   CALL MeshDestroy( OutputData%PlatformPtMesh, ErrStat, ErrMsg )
   CALL MeshDestroy( OutputData%TowerLn2Mesh, ErrStat, ErrMsg )
+  CALL MeshDestroy( OutputData%TowerLn2Mesh_hybrid, ErrStat, ErrMsg )
   CALL MeshDestroy( OutputData%HubPtMotion14, ErrStat, ErrMsg )
   CALL MeshDestroy( OutputData%HubPtMotion, ErrStat, ErrMsg )
+  CALL MeshDestroy( OutputData%HubPtMotion_hybrid, ErrStat, ErrMsg )
   CALL MeshDestroy( OutputData%BladeRootMotion14, ErrStat, ErrMsg )
 IF (ALLOCATED(OutputData%BladeRootMotion)) THEN
 DO i1 = LBOUND(OutputData%BladeRootMotion,1), UBOUND(OutputData%BladeRootMotion,1)
   CALL MeshDestroy( OutputData%BladeRootMotion(i1), ErrStat, ErrMsg )
 ENDDO
   DEALLOCATE(OutputData%BladeRootMotion)
+ENDIF
+IF (ALLOCATED(OutputData%BladeRootMotion_hybrid)) THEN
+DO i1 = LBOUND(OutputData%BladeRootMotion_hybrid,1), UBOUND(OutputData%BladeRootMotion_hybrid,1)
+  CALL MeshDestroy( OutputData%BladeRootMotion_hybrid(i1), ErrStat, ErrMsg )
+ENDDO
+  DEALLOCATE(OutputData%BladeRootMotion_hybrid)
 ENDIF
   CALL MeshDestroy( OutputData%RotorFurlMotion14, ErrStat, ErrMsg )
   CALL MeshDestroy( OutputData%NacelleMotion, ErrStat, ErrMsg )
@@ -23465,6 +23794,29 @@ ENDIF
       END IF
     END DO
   END IF
+  Int_BufSz   = Int_BufSz   + 1     ! BladeLn2Mesh_hybrid allocated yes/no
+  IF ( ALLOCATED(InData%BladeLn2Mesh_hybrid) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! BladeLn2Mesh_hybrid upper/lower bounds for each dimension
+    DO i1 = LBOUND(InData%BladeLn2Mesh_hybrid,1), UBOUND(InData%BladeLn2Mesh_hybrid,1)
+      Int_BufSz   = Int_BufSz + 3  ! BladeLn2Mesh_hybrid: size of buffers for each call to pack subtype
+      CALL MeshPack( InData%BladeLn2Mesh_hybrid(i1), Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2, .TRUE. ) ! BladeLn2Mesh_hybrid 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN ! BladeLn2Mesh_hybrid
+         Re_BufSz  = Re_BufSz  + SIZE( Re_Buf  )
+         DEALLOCATE(Re_Buf)
+      END IF
+      IF(ALLOCATED(Db_Buf)) THEN ! BladeLn2Mesh_hybrid
+         Db_BufSz  = Db_BufSz  + SIZE( Db_Buf  )
+         DEALLOCATE(Db_Buf)
+      END IF
+      IF(ALLOCATED(Int_Buf)) THEN ! BladeLn2Mesh_hybrid
+         Int_BufSz = Int_BufSz + SIZE( Int_Buf )
+         DEALLOCATE(Int_Buf)
+      END IF
+    END DO
+  END IF
       Int_BufSz   = Int_BufSz + 3  ! PlatformPtMesh: size of buffers for each call to pack subtype
       CALL MeshPack( InData%PlatformPtMesh, Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2, .TRUE. ) ! PlatformPtMesh 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
@@ -23499,6 +23851,23 @@ ENDIF
          Int_BufSz = Int_BufSz + SIZE( Int_Buf )
          DEALLOCATE(Int_Buf)
       END IF
+      Int_BufSz   = Int_BufSz + 3  ! TowerLn2Mesh_hybrid: size of buffers for each call to pack subtype
+      CALL MeshPack( InData%TowerLn2Mesh_hybrid, Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2, .TRUE. ) ! TowerLn2Mesh_hybrid 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN ! TowerLn2Mesh_hybrid
+         Re_BufSz  = Re_BufSz  + SIZE( Re_Buf  )
+         DEALLOCATE(Re_Buf)
+      END IF
+      IF(ALLOCATED(Db_Buf)) THEN ! TowerLn2Mesh_hybrid
+         Db_BufSz  = Db_BufSz  + SIZE( Db_Buf  )
+         DEALLOCATE(Db_Buf)
+      END IF
+      IF(ALLOCATED(Int_Buf)) THEN ! TowerLn2Mesh_hybrid
+         Int_BufSz = Int_BufSz + SIZE( Int_Buf )
+         DEALLOCATE(Int_Buf)
+      END IF
       Int_BufSz   = Int_BufSz + 3  ! HubPtMotion14: size of buffers for each call to pack subtype
       CALL MeshPack( InData%HubPtMotion14, Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2, .TRUE. ) ! HubPtMotion14 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
@@ -23530,6 +23899,23 @@ ENDIF
          DEALLOCATE(Db_Buf)
       END IF
       IF(ALLOCATED(Int_Buf)) THEN ! HubPtMotion
+         Int_BufSz = Int_BufSz + SIZE( Int_Buf )
+         DEALLOCATE(Int_Buf)
+      END IF
+      Int_BufSz   = Int_BufSz + 3  ! HubPtMotion_hybrid: size of buffers for each call to pack subtype
+      CALL MeshPack( InData%HubPtMotion_hybrid, Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2, .TRUE. ) ! HubPtMotion_hybrid 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN ! HubPtMotion_hybrid
+         Re_BufSz  = Re_BufSz  + SIZE( Re_Buf  )
+         DEALLOCATE(Re_Buf)
+      END IF
+      IF(ALLOCATED(Db_Buf)) THEN ! HubPtMotion_hybrid
+         Db_BufSz  = Db_BufSz  + SIZE( Db_Buf  )
+         DEALLOCATE(Db_Buf)
+      END IF
+      IF(ALLOCATED(Int_Buf)) THEN ! HubPtMotion_hybrid
          Int_BufSz = Int_BufSz + SIZE( Int_Buf )
          DEALLOCATE(Int_Buf)
       END IF
@@ -23568,6 +23954,29 @@ ENDIF
          DEALLOCATE(Db_Buf)
       END IF
       IF(ALLOCATED(Int_Buf)) THEN ! BladeRootMotion
+         Int_BufSz = Int_BufSz + SIZE( Int_Buf )
+         DEALLOCATE(Int_Buf)
+      END IF
+    END DO
+  END IF
+  Int_BufSz   = Int_BufSz   + 1     ! BladeRootMotion_hybrid allocated yes/no
+  IF ( ALLOCATED(InData%BladeRootMotion_hybrid) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! BladeRootMotion_hybrid upper/lower bounds for each dimension
+    DO i1 = LBOUND(InData%BladeRootMotion_hybrid,1), UBOUND(InData%BladeRootMotion_hybrid,1)
+      Int_BufSz   = Int_BufSz + 3  ! BladeRootMotion_hybrid: size of buffers for each call to pack subtype
+      CALL MeshPack( InData%BladeRootMotion_hybrid(i1), Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2, .TRUE. ) ! BladeRootMotion_hybrid 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN ! BladeRootMotion_hybrid
+         Re_BufSz  = Re_BufSz  + SIZE( Re_Buf  )
+         DEALLOCATE(Re_Buf)
+      END IF
+      IF(ALLOCATED(Db_Buf)) THEN ! BladeRootMotion_hybrid
+         Db_BufSz  = Db_BufSz  + SIZE( Db_Buf  )
+         DEALLOCATE(Db_Buf)
+      END IF
+      IF(ALLOCATED(Int_Buf)) THEN ! BladeRootMotion_hybrid
          Int_BufSz = Int_BufSz + SIZE( Int_Buf )
          DEALLOCATE(Int_Buf)
       END IF
@@ -23725,6 +24134,47 @@ ENDIF
       ENDIF
     END DO
   END IF
+  IF ( .NOT. ALLOCATED(InData%BladeLn2Mesh_hybrid) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%BladeLn2Mesh_hybrid,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%BladeLn2Mesh_hybrid,1)
+    Int_Xferred = Int_Xferred + 2
+
+    DO i1 = LBOUND(InData%BladeLn2Mesh_hybrid,1), UBOUND(InData%BladeLn2Mesh_hybrid,1)
+      CALL MeshPack( InData%BladeLn2Mesh_hybrid(i1), Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2, OnlySize ) ! BladeLn2Mesh_hybrid 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Re_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Re_Buf) > 0) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_Buf)-1 ) = Re_Buf
+        Re_Xferred = Re_Xferred + SIZE(Re_Buf)
+        DEALLOCATE(Re_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Db_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Db_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Db_Buf) > 0) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_Buf)-1 ) = Db_Buf
+        Db_Xferred = Db_Xferred + SIZE(Db_Buf)
+        DEALLOCATE(Db_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Int_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Int_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Int_Buf) > 0) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_Buf)-1 ) = Int_Buf
+        Int_Xferred = Int_Xferred + SIZE(Int_Buf)
+        DEALLOCATE(Int_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+    END DO
+  END IF
       CALL MeshPack( InData%PlatformPtMesh, Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2, OnlySize ) ! PlatformPtMesh 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
@@ -23754,6 +24204,34 @@ ENDIF
         IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
       ENDIF
       CALL MeshPack( InData%TowerLn2Mesh, Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2, OnlySize ) ! TowerLn2Mesh 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Re_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Re_Buf) > 0) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_Buf)-1 ) = Re_Buf
+        Re_Xferred = Re_Xferred + SIZE(Re_Buf)
+        DEALLOCATE(Re_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Db_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Db_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Db_Buf) > 0) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_Buf)-1 ) = Db_Buf
+        Db_Xferred = Db_Xferred + SIZE(Db_Buf)
+        DEALLOCATE(Db_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Int_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Int_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Int_Buf) > 0) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_Buf)-1 ) = Int_Buf
+        Int_Xferred = Int_Xferred + SIZE(Int_Buf)
+        DEALLOCATE(Int_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      CALL MeshPack( InData%TowerLn2Mesh_hybrid, Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2, OnlySize ) ! TowerLn2Mesh_hybrid 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
 
@@ -23837,6 +24315,34 @@ ENDIF
       ELSE
         IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
       ENDIF
+      CALL MeshPack( InData%HubPtMotion_hybrid, Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2, OnlySize ) ! HubPtMotion_hybrid 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Re_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Re_Buf) > 0) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_Buf)-1 ) = Re_Buf
+        Re_Xferred = Re_Xferred + SIZE(Re_Buf)
+        DEALLOCATE(Re_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Db_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Db_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Db_Buf) > 0) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_Buf)-1 ) = Db_Buf
+        Db_Xferred = Db_Xferred + SIZE(Db_Buf)
+        DEALLOCATE(Db_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Int_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Int_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Int_Buf) > 0) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_Buf)-1 ) = Int_Buf
+        Int_Xferred = Int_Xferred + SIZE(Int_Buf)
+        DEALLOCATE(Int_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
       CALL MeshPack( InData%BladeRootMotion14, Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2, OnlySize ) ! BladeRootMotion14 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
@@ -23877,6 +24383,47 @@ ENDIF
 
     DO i1 = LBOUND(InData%BladeRootMotion,1), UBOUND(InData%BladeRootMotion,1)
       CALL MeshPack( InData%BladeRootMotion(i1), Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2, OnlySize ) ! BladeRootMotion 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Re_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Re_Buf) > 0) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_Buf)-1 ) = Re_Buf
+        Re_Xferred = Re_Xferred + SIZE(Re_Buf)
+        DEALLOCATE(Re_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Db_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Db_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Db_Buf) > 0) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_Buf)-1 ) = Db_Buf
+        Db_Xferred = Db_Xferred + SIZE(Db_Buf)
+        DEALLOCATE(Db_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Int_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Int_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Int_Buf) > 0) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_Buf)-1 ) = Int_Buf
+        Int_Xferred = Int_Xferred + SIZE(Int_Buf)
+        DEALLOCATE(Int_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+    END DO
+  END IF
+  IF ( .NOT. ALLOCATED(InData%BladeRootMotion_hybrid) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%BladeRootMotion_hybrid,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%BladeRootMotion_hybrid,1)
+    Int_Xferred = Int_Xferred + 2
+
+    DO i1 = LBOUND(InData%BladeRootMotion_hybrid,1), UBOUND(InData%BladeRootMotion_hybrid,1)
+      CALL MeshPack( InData%BladeRootMotion_hybrid(i1), Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2, OnlySize ) ! BladeRootMotion_hybrid 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
 
@@ -24153,6 +24700,62 @@ ENDIF
       IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
     END DO
   END IF
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! BladeLn2Mesh_hybrid not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ALLOCATED(OutData%BladeLn2Mesh_hybrid)) DEALLOCATE(OutData%BladeLn2Mesh_hybrid)
+    ALLOCATE(OutData%BladeLn2Mesh_hybrid(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%BladeLn2Mesh_hybrid.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    DO i1 = LBOUND(OutData%BladeLn2Mesh_hybrid,1), UBOUND(OutData%BladeLn2Mesh_hybrid,1)
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Re_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Re_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Re_Buf = ReKiBuf( Re_Xferred:Re_Xferred+Buf_size-1 )
+        Re_Xferred = Re_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Db_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Db_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Db_Buf = DbKiBuf( Db_Xferred:Db_Xferred+Buf_size-1 )
+        Db_Xferred = Db_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Int_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Int_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Int_Buf = IntKiBuf( Int_Xferred:Int_Xferred+Buf_size-1 )
+        Int_Xferred = Int_Xferred + Buf_size
+      END IF
+      CALL MeshUnpack( OutData%BladeLn2Mesh_hybrid(i1), Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2 ) ! BladeLn2Mesh_hybrid 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf )) DEALLOCATE(Re_Buf )
+      IF(ALLOCATED(Db_Buf )) DEALLOCATE(Db_Buf )
+      IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
+    END DO
+  END IF
       Buf_size=IntKiBuf( Int_Xferred )
       Int_Xferred = Int_Xferred + 1
       IF(Buf_size > 0) THEN
@@ -24227,6 +24830,46 @@ ENDIF
         Int_Xferred = Int_Xferred + Buf_size
       END IF
       CALL MeshUnpack( OutData%TowerLn2Mesh, Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2 ) ! TowerLn2Mesh 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf )) DEALLOCATE(Re_Buf )
+      IF(ALLOCATED(Db_Buf )) DEALLOCATE(Db_Buf )
+      IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Re_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Re_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Re_Buf = ReKiBuf( Re_Xferred:Re_Xferred+Buf_size-1 )
+        Re_Xferred = Re_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Db_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Db_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Db_Buf = DbKiBuf( Db_Xferred:Db_Xferred+Buf_size-1 )
+        Db_Xferred = Db_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Int_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Int_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Int_Buf = IntKiBuf( Int_Xferred:Int_Xferred+Buf_size-1 )
+        Int_Xferred = Int_Xferred + Buf_size
+      END IF
+      CALL MeshUnpack( OutData%TowerLn2Mesh_hybrid, Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2 ) ! TowerLn2Mesh_hybrid 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
 
@@ -24346,6 +24989,46 @@ ENDIF
         Int_Buf = IntKiBuf( Int_Xferred:Int_Xferred+Buf_size-1 )
         Int_Xferred = Int_Xferred + Buf_size
       END IF
+      CALL MeshUnpack( OutData%HubPtMotion_hybrid, Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2 ) ! HubPtMotion_hybrid 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf )) DEALLOCATE(Re_Buf )
+      IF(ALLOCATED(Db_Buf )) DEALLOCATE(Db_Buf )
+      IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Re_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Re_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Re_Buf = ReKiBuf( Re_Xferred:Re_Xferred+Buf_size-1 )
+        Re_Xferred = Re_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Db_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Db_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Db_Buf = DbKiBuf( Db_Xferred:Db_Xferred+Buf_size-1 )
+        Db_Xferred = Db_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Int_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Int_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Int_Buf = IntKiBuf( Int_Xferred:Int_Xferred+Buf_size-1 )
+        Int_Xferred = Int_Xferred + Buf_size
+      END IF
       CALL MeshUnpack( OutData%BladeRootMotion14, Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2 ) ! BladeRootMotion14 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
@@ -24401,6 +25084,62 @@ ENDIF
         Int_Xferred = Int_Xferred + Buf_size
       END IF
       CALL MeshUnpack( OutData%BladeRootMotion(i1), Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2 ) ! BladeRootMotion 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf )) DEALLOCATE(Re_Buf )
+      IF(ALLOCATED(Db_Buf )) DEALLOCATE(Db_Buf )
+      IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
+    END DO
+  END IF
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! BladeRootMotion_hybrid not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ALLOCATED(OutData%BladeRootMotion_hybrid)) DEALLOCATE(OutData%BladeRootMotion_hybrid)
+    ALLOCATE(OutData%BladeRootMotion_hybrid(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%BladeRootMotion_hybrid.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    DO i1 = LBOUND(OutData%BladeRootMotion_hybrid,1), UBOUND(OutData%BladeRootMotion_hybrid,1)
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Re_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Re_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Re_Buf = ReKiBuf( Re_Xferred:Re_Xferred+Buf_size-1 )
+        Re_Xferred = Re_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Db_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Db_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Db_Buf = DbKiBuf( Db_Xferred:Db_Xferred+Buf_size-1 )
+        Db_Xferred = Db_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Int_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Int_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Int_Buf = IntKiBuf( Int_Xferred:Int_Xferred+Buf_size-1 )
+        Int_Xferred = Int_Xferred + Buf_size
+      END IF
+      CALL MeshUnpack( OutData%BladeRootMotion_hybrid(i1), Re_Buf, Db_Buf, Int_Buf, ErrStat2, ErrMsg2 ) ! BladeRootMotion_hybrid 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
 
@@ -24783,6 +25522,30 @@ END IF ! check if allocated
   u_out%GenTrq = u1%GenTrq + b0 * t_out
   b0 = -(u1%HSSBrTrqC - u2%HSSBrTrqC)/t(2)
   u_out%HSSBrTrqC = u1%HSSBrTrqC + b0 * t_out
+  b0 = -(u1%ExternalPtfmSurge - u2%ExternalPtfmSurge)/t(2)
+  u_out%ExternalPtfmSurge = u1%ExternalPtfmSurge + b0 * t_out
+  b0 = -(u1%ExternalPtfmSway - u2%ExternalPtfmSway)/t(2)
+  u_out%ExternalPtfmSway = u1%ExternalPtfmSway + b0 * t_out
+  b0 = -(u1%ExternalPtfmHeave - u2%ExternalPtfmHeave)/t(2)
+  u_out%ExternalPtfmHeave = u1%ExternalPtfmHeave + b0 * t_out
+  b0 = -(u1%ExternalPtfmRoll - u2%ExternalPtfmRoll)/t(2)
+  u_out%ExternalPtfmRoll = u1%ExternalPtfmRoll + b0 * t_out
+  b0 = -(u1%ExternalPtfmPitch - u2%ExternalPtfmPitch)/t(2)
+  u_out%ExternalPtfmPitch = u1%ExternalPtfmPitch + b0 * t_out
+  b0 = -(u1%ExternalPtfmYaw - u2%ExternalPtfmYaw)/t(2)
+  u_out%ExternalPtfmYaw = u1%ExternalPtfmYaw + b0 * t_out
+  b0 = -(u1%ExternalPtfmSurgeVel - u2%ExternalPtfmSurgeVel)/t(2)
+  u_out%ExternalPtfmSurgeVel = u1%ExternalPtfmSurgeVel + b0 * t_out
+  b0 = -(u1%ExternalPtfmSwayVel - u2%ExternalPtfmSwayVel)/t(2)
+  u_out%ExternalPtfmSwayVel = u1%ExternalPtfmSwayVel + b0 * t_out
+  b0 = -(u1%ExternalPtfmHeaveVel - u2%ExternalPtfmHeaveVel)/t(2)
+  u_out%ExternalPtfmHeaveVel = u1%ExternalPtfmHeaveVel + b0 * t_out
+  b0 = -(u1%ExternalPtfmRollVel - u2%ExternalPtfmRollVel)/t(2)
+  u_out%ExternalPtfmRollVel = u1%ExternalPtfmRollVel + b0 * t_out
+  b0 = -(u1%ExternalPtfmPitchVel - u2%ExternalPtfmPitchVel)/t(2)
+  u_out%ExternalPtfmPitchVel = u1%ExternalPtfmPitchVel + b0 * t_out
+  b0 = -(u1%ExternalPtfmYawVel - u2%ExternalPtfmYawVel)/t(2)
+  u_out%ExternalPtfmYawVel = u1%ExternalPtfmYawVel + b0 * t_out
  END SUBROUTINE ED_Input_ExtrapInterp1
 
 
@@ -24892,6 +25655,42 @@ END IF ! check if allocated
   b0 = (t(3)**2*(u1%HSSBrTrqC - u2%HSSBrTrqC) + t(2)**2*(-u1%HSSBrTrqC + u3%HSSBrTrqC))/(t(2)*t(3)*(t(2) - t(3)))
   c0 = ( (t(2)-t(3))*u1%HSSBrTrqC + t(3)*u2%HSSBrTrqC - t(2)*u3%HSSBrTrqC ) / (t(2)*t(3)*(t(2) - t(3)))
   u_out%HSSBrTrqC = u1%HSSBrTrqC + b0 * t_out + c0 * t_out**2
+  b0 = (t(3)**2*(u1%ExternalPtfmSurge - u2%ExternalPtfmSurge) + t(2)**2*(-u1%ExternalPtfmSurge + u3%ExternalPtfmSurge))/(t(2)*t(3)*(t(2) - t(3)))
+  c0 = ( (t(2)-t(3))*u1%ExternalPtfmSurge + t(3)*u2%ExternalPtfmSurge - t(2)*u3%ExternalPtfmSurge ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%ExternalPtfmSurge = u1%ExternalPtfmSurge + b0 * t_out + c0 * t_out**2
+  b0 = (t(3)**2*(u1%ExternalPtfmSway - u2%ExternalPtfmSway) + t(2)**2*(-u1%ExternalPtfmSway + u3%ExternalPtfmSway))/(t(2)*t(3)*(t(2) - t(3)))
+  c0 = ( (t(2)-t(3))*u1%ExternalPtfmSway + t(3)*u2%ExternalPtfmSway - t(2)*u3%ExternalPtfmSway ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%ExternalPtfmSway = u1%ExternalPtfmSway + b0 * t_out + c0 * t_out**2
+  b0 = (t(3)**2*(u1%ExternalPtfmHeave - u2%ExternalPtfmHeave) + t(2)**2*(-u1%ExternalPtfmHeave + u3%ExternalPtfmHeave))/(t(2)*t(3)*(t(2) - t(3)))
+  c0 = ( (t(2)-t(3))*u1%ExternalPtfmHeave + t(3)*u2%ExternalPtfmHeave - t(2)*u3%ExternalPtfmHeave ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%ExternalPtfmHeave = u1%ExternalPtfmHeave + b0 * t_out + c0 * t_out**2
+  b0 = (t(3)**2*(u1%ExternalPtfmRoll - u2%ExternalPtfmRoll) + t(2)**2*(-u1%ExternalPtfmRoll + u3%ExternalPtfmRoll))/(t(2)*t(3)*(t(2) - t(3)))
+  c0 = ( (t(2)-t(3))*u1%ExternalPtfmRoll + t(3)*u2%ExternalPtfmRoll - t(2)*u3%ExternalPtfmRoll ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%ExternalPtfmRoll = u1%ExternalPtfmRoll + b0 * t_out + c0 * t_out**2
+  b0 = (t(3)**2*(u1%ExternalPtfmPitch - u2%ExternalPtfmPitch) + t(2)**2*(-u1%ExternalPtfmPitch + u3%ExternalPtfmPitch))/(t(2)*t(3)*(t(2) - t(3)))
+  c0 = ( (t(2)-t(3))*u1%ExternalPtfmPitch + t(3)*u2%ExternalPtfmPitch - t(2)*u3%ExternalPtfmPitch ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%ExternalPtfmPitch = u1%ExternalPtfmPitch + b0 * t_out + c0 * t_out**2
+  b0 = (t(3)**2*(u1%ExternalPtfmYaw - u2%ExternalPtfmYaw) + t(2)**2*(-u1%ExternalPtfmYaw + u3%ExternalPtfmYaw))/(t(2)*t(3)*(t(2) - t(3)))
+  c0 = ( (t(2)-t(3))*u1%ExternalPtfmYaw + t(3)*u2%ExternalPtfmYaw - t(2)*u3%ExternalPtfmYaw ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%ExternalPtfmYaw = u1%ExternalPtfmYaw + b0 * t_out + c0 * t_out**2
+  b0 = (t(3)**2*(u1%ExternalPtfmSurgeVel - u2%ExternalPtfmSurgeVel) + t(2)**2*(-u1%ExternalPtfmSurgeVel + u3%ExternalPtfmSurgeVel))/(t(2)*t(3)*(t(2) - t(3)))
+  c0 = ( (t(2)-t(3))*u1%ExternalPtfmSurgeVel + t(3)*u2%ExternalPtfmSurgeVel - t(2)*u3%ExternalPtfmSurgeVel ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%ExternalPtfmSurgeVel = u1%ExternalPtfmSurgeVel + b0 * t_out + c0 * t_out**2
+  b0 = (t(3)**2*(u1%ExternalPtfmSwayVel - u2%ExternalPtfmSwayVel) + t(2)**2*(-u1%ExternalPtfmSwayVel + u3%ExternalPtfmSwayVel))/(t(2)*t(3)*(t(2) - t(3)))
+  c0 = ( (t(2)-t(3))*u1%ExternalPtfmSwayVel + t(3)*u2%ExternalPtfmSwayVel - t(2)*u3%ExternalPtfmSwayVel ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%ExternalPtfmSwayVel = u1%ExternalPtfmSwayVel + b0 * t_out + c0 * t_out**2
+  b0 = (t(3)**2*(u1%ExternalPtfmHeaveVel - u2%ExternalPtfmHeaveVel) + t(2)**2*(-u1%ExternalPtfmHeaveVel + u3%ExternalPtfmHeaveVel))/(t(2)*t(3)*(t(2) - t(3)))
+  c0 = ( (t(2)-t(3))*u1%ExternalPtfmHeaveVel + t(3)*u2%ExternalPtfmHeaveVel - t(2)*u3%ExternalPtfmHeaveVel ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%ExternalPtfmHeaveVel = u1%ExternalPtfmHeaveVel + b0 * t_out + c0 * t_out**2
+  b0 = (t(3)**2*(u1%ExternalPtfmRollVel - u2%ExternalPtfmRollVel) + t(2)**2*(-u1%ExternalPtfmRollVel + u3%ExternalPtfmRollVel))/(t(2)*t(3)*(t(2) - t(3)))
+  c0 = ( (t(2)-t(3))*u1%ExternalPtfmRollVel + t(3)*u2%ExternalPtfmRollVel - t(2)*u3%ExternalPtfmRollVel ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%ExternalPtfmRollVel = u1%ExternalPtfmRollVel + b0 * t_out + c0 * t_out**2
+  b0 = (t(3)**2*(u1%ExternalPtfmPitchVel - u2%ExternalPtfmPitchVel) + t(2)**2*(-u1%ExternalPtfmPitchVel + u3%ExternalPtfmPitchVel))/(t(2)*t(3)*(t(2) - t(3)))
+  c0 = ( (t(2)-t(3))*u1%ExternalPtfmPitchVel + t(3)*u2%ExternalPtfmPitchVel - t(2)*u3%ExternalPtfmPitchVel ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%ExternalPtfmPitchVel = u1%ExternalPtfmPitchVel + b0 * t_out + c0 * t_out**2
+  b0 = (t(3)**2*(u1%ExternalPtfmYawVel - u2%ExternalPtfmYawVel) + t(2)**2*(-u1%ExternalPtfmYawVel + u3%ExternalPtfmYawVel))/(t(2)*t(3)*(t(2) - t(3)))
+  c0 = ( (t(2)-t(3))*u1%ExternalPtfmYawVel + t(3)*u2%ExternalPtfmYawVel - t(2)*u3%ExternalPtfmYawVel ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%ExternalPtfmYawVel = u1%ExternalPtfmYawVel + b0 * t_out + c0 * t_out**2
  END SUBROUTINE ED_Input_ExtrapInterp2
 
 
@@ -24994,19 +25793,35 @@ IF (ALLOCATED(y_out%BladeLn2Mesh) .AND. ALLOCATED(y1%BladeLn2Mesh)) THEN
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
    ENDDO
 END IF ! check if allocated
+IF (ALLOCATED(y_out%BladeLn2Mesh_hybrid) .AND. ALLOCATED(y1%BladeLn2Mesh_hybrid)) THEN
+  DO i01 = LBOUND(y_out%BladeLn2Mesh_hybrid,1),UBOUND(y_out%BladeLn2Mesh_hybrid,1)
+      CALL MeshExtrapInterp1(y1%BladeLn2Mesh_hybrid(i01), y2%BladeLn2Mesh_hybrid(i01), tin, y_out%BladeLn2Mesh_hybrid(i01), tin_out, ErrStat2, ErrMsg2 )
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+   ENDDO
+END IF ! check if allocated
       CALL MeshExtrapInterp1(y1%PlatformPtMesh, y2%PlatformPtMesh, tin, y_out%PlatformPtMesh, tin_out, ErrStat2, ErrMsg2 )
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
       CALL MeshExtrapInterp1(y1%TowerLn2Mesh, y2%TowerLn2Mesh, tin, y_out%TowerLn2Mesh, tin_out, ErrStat2, ErrMsg2 )
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+      CALL MeshExtrapInterp1(y1%TowerLn2Mesh_hybrid, y2%TowerLn2Mesh_hybrid, tin, y_out%TowerLn2Mesh_hybrid, tin_out, ErrStat2, ErrMsg2 )
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
       CALL MeshExtrapInterp1(y1%HubPtMotion14, y2%HubPtMotion14, tin, y_out%HubPtMotion14, tin_out, ErrStat2, ErrMsg2 )
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
       CALL MeshExtrapInterp1(y1%HubPtMotion, y2%HubPtMotion, tin, y_out%HubPtMotion, tin_out, ErrStat2, ErrMsg2 )
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+      CALL MeshExtrapInterp1(y1%HubPtMotion_hybrid, y2%HubPtMotion_hybrid, tin, y_out%HubPtMotion_hybrid, tin_out, ErrStat2, ErrMsg2 )
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
       CALL MeshExtrapInterp1(y1%BladeRootMotion14, y2%BladeRootMotion14, tin, y_out%BladeRootMotion14, tin_out, ErrStat2, ErrMsg2 )
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
 IF (ALLOCATED(y_out%BladeRootMotion) .AND. ALLOCATED(y1%BladeRootMotion)) THEN
   DO i01 = LBOUND(y_out%BladeRootMotion,1),UBOUND(y_out%BladeRootMotion,1)
       CALL MeshExtrapInterp1(y1%BladeRootMotion(i01), y2%BladeRootMotion(i01), tin, y_out%BladeRootMotion(i01), tin_out, ErrStat2, ErrMsg2 )
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+   ENDDO
+END IF ! check if allocated
+IF (ALLOCATED(y_out%BladeRootMotion_hybrid) .AND. ALLOCATED(y1%BladeRootMotion_hybrid)) THEN
+  DO i01 = LBOUND(y_out%BladeRootMotion_hybrid,1),UBOUND(y_out%BladeRootMotion_hybrid,1)
+      CALL MeshExtrapInterp1(y1%BladeRootMotion_hybrid(i01), y2%BladeRootMotion_hybrid(i01), tin, y_out%BladeRootMotion_hybrid(i01), tin_out, ErrStat2, ErrMsg2 )
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
    ENDDO
 END IF ! check if allocated
@@ -25147,19 +25962,35 @@ IF (ALLOCATED(y_out%BladeLn2Mesh) .AND. ALLOCATED(y1%BladeLn2Mesh)) THEN
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
    ENDDO
 END IF ! check if allocated
+IF (ALLOCATED(y_out%BladeLn2Mesh_hybrid) .AND. ALLOCATED(y1%BladeLn2Mesh_hybrid)) THEN
+  DO i01 = LBOUND(y_out%BladeLn2Mesh_hybrid,1),UBOUND(y_out%BladeLn2Mesh_hybrid,1)
+      CALL MeshExtrapInterp2(y1%BladeLn2Mesh_hybrid(i01), y2%BladeLn2Mesh_hybrid(i01), y3%BladeLn2Mesh_hybrid(i01), tin, y_out%BladeLn2Mesh_hybrid(i01), tin_out, ErrStat2, ErrMsg2 )
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+   ENDDO
+END IF ! check if allocated
       CALL MeshExtrapInterp2(y1%PlatformPtMesh, y2%PlatformPtMesh, y3%PlatformPtMesh, tin, y_out%PlatformPtMesh, tin_out, ErrStat2, ErrMsg2 )
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
       CALL MeshExtrapInterp2(y1%TowerLn2Mesh, y2%TowerLn2Mesh, y3%TowerLn2Mesh, tin, y_out%TowerLn2Mesh, tin_out, ErrStat2, ErrMsg2 )
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+      CALL MeshExtrapInterp2(y1%TowerLn2Mesh_hybrid, y2%TowerLn2Mesh_hybrid, y3%TowerLn2Mesh_hybrid, tin, y_out%TowerLn2Mesh_hybrid, tin_out, ErrStat2, ErrMsg2 )
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
       CALL MeshExtrapInterp2(y1%HubPtMotion14, y2%HubPtMotion14, y3%HubPtMotion14, tin, y_out%HubPtMotion14, tin_out, ErrStat2, ErrMsg2 )
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
       CALL MeshExtrapInterp2(y1%HubPtMotion, y2%HubPtMotion, y3%HubPtMotion, tin, y_out%HubPtMotion, tin_out, ErrStat2, ErrMsg2 )
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+      CALL MeshExtrapInterp2(y1%HubPtMotion_hybrid, y2%HubPtMotion_hybrid, y3%HubPtMotion_hybrid, tin, y_out%HubPtMotion_hybrid, tin_out, ErrStat2, ErrMsg2 )
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
       CALL MeshExtrapInterp2(y1%BladeRootMotion14, y2%BladeRootMotion14, y3%BladeRootMotion14, tin, y_out%BladeRootMotion14, tin_out, ErrStat2, ErrMsg2 )
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
 IF (ALLOCATED(y_out%BladeRootMotion) .AND. ALLOCATED(y1%BladeRootMotion)) THEN
   DO i01 = LBOUND(y_out%BladeRootMotion,1),UBOUND(y_out%BladeRootMotion,1)
       CALL MeshExtrapInterp2(y1%BladeRootMotion(i01), y2%BladeRootMotion(i01), y3%BladeRootMotion(i01), tin, y_out%BladeRootMotion(i01), tin_out, ErrStat2, ErrMsg2 )
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+   ENDDO
+END IF ! check if allocated
+IF (ALLOCATED(y_out%BladeRootMotion_hybrid) .AND. ALLOCATED(y1%BladeRootMotion_hybrid)) THEN
+  DO i01 = LBOUND(y_out%BladeRootMotion_hybrid,1),UBOUND(y_out%BladeRootMotion_hybrid,1)
+      CALL MeshExtrapInterp2(y1%BladeRootMotion_hybrid(i01), y2%BladeRootMotion_hybrid(i01), y3%BladeRootMotion_hybrid(i01), tin, y_out%BladeRootMotion_hybrid(i01), tin_out, ErrStat2, ErrMsg2 )
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
    ENDDO
 END IF ! check if allocated

@@ -1218,8 +1218,22 @@ SUBROUTINE FAST_InitializeAll( t_initial, p_FAST, y_FAST, m_FAST, ED, BD, SrvD, 
       end do   
    end if
    
-   m_FAST%ExternInput%LidarFocus = 1.0_ReKi  ! make this non-zero (until we add the initial position in the InflowWind input file)
-         
+   m_FAST%ExternInput%LidarFocus  = 1.0_ReKi  ! make this non-zero (until we add the initial position in the InflowWind input file)
+   
+   ! @mcd: the only reason these external inputs are initialized like this instead of setting to zero is if initial platform displacements
+   ! are specified in the ElastoDyn input file when using force control
+   m_FAST%ExternInput%PtfmSurge      = ED%Input(1)%ExternalPtfmSurge
+   m_FAST%ExternInput%PtfmSway       = ED%Input(1)%ExternalPtfmSway
+   m_FAST%ExternInput%PtfmHeave      = ED%Input(1)%ExternalPtfmHeave
+   m_FAST%ExternInput%PtfmPitch      = ED%Input(1)%ExternalPtfmPitch
+   m_FAST%ExternInput%PtfmRoll       = ED%Input(1)%ExternalPtfmRoll
+   m_FAST%ExternInput%PtfmYaw        = ED%Input(1)%ExternalPtfmYaw
+   m_FAST%ExternInput%PtfmSurgeVel   = ED%Input(1)%ExternalPtfmSurgeVel
+   m_FAST%ExternInput%PtfmSwayVel    = ED%Input(1)%ExternalPtfmSwayVel
+   m_FAST%ExternInput%PtfmHeaveVel   = ED%Input(1)%ExternalPtfmHeaveVel
+   m_FAST%ExternInput%PtfmPitchVel   = ED%Input(1)%ExternalPtfmPitchVel
+   m_FAST%ExternInput%PtfmRollVel    = ED%Input(1)%ExternalPtfmRollVel
+   m_FAST%ExternInput%PtfmYawVel     = ED%Input(1)%ExternalPtfmYawVel
    
    !...............................................................................................................................
    ! Destroy initializion data
@@ -1564,7 +1578,7 @@ SUBROUTINE FAST_Init( p, y_FAST, t_initial, InputFile, ErrStat, ErrMsg, TMax, Tu
    y_FAST%Module_Abrev( Module_MD     ) = 'MD'
    y_FAST%Module_Abrev( Module_Orca   ) = 'Orca'
    y_FAST%Module_Abrev( Module_IceF   ) = 'IceF'
-   y_FAST%Module_Abrev( Module_IceD   ) = 'IceD'   
+   y_FAST%Module_Abrev( Module_IceD   ) = 'IceD'
    
    p%n_substeps = 1                                                ! number of substeps for between modules and global/FAST time
    p%BD_OutputSibling = .false.
@@ -1902,7 +1916,6 @@ SUBROUTINE FAST_InitOutput( p_FAST, y_FAST, InitOutData_ED, InitOutData_BD, Init
       y_FAST%Module_Ver( Module_IceD )   = InitOutData_IceD%Ver
       y_FAST%FileDescLines(2)  = TRIM(y_FAST%FileDescLines(2) ) //'; '//TRIM(GetNVD(y_FAST%Module_Ver( Module_IceD )))   
    END IF      
-   
    !......................................................
    ! Set the number of output columns from each module
    !......................................................
@@ -1929,7 +1942,7 @@ end do
    IF ( ALLOCATED( InitOutData_MD%WriteOutputHdr     ) ) y_FAST%numOuts(Module_MD)     = SIZE(InitOutData_MD%WriteOutputHdr)
    IF ( ALLOCATED( InitOutData_Orca%WriteOutputHdr   ) ) y_FAST%numOuts(Module_Orca)   = SIZE(InitOutData_Orca%WriteOutputHdr)
    IF ( ALLOCATED( InitOutData_IceF%WriteOutputHdr   ) ) y_FAST%numOuts(Module_IceF)   = SIZE(InitOutData_IceF%WriteOutputHdr)
-   IF ( ALLOCATED( InitOutData_IceD%WriteOutputHdr   ) ) y_FAST%numOuts(Module_IceD)   = SIZE(InitOutData_IceD%WriteOutputHdr)*p_FAST%numIceLegs         
+   IF ( ALLOCATED( InitOutData_IceD%WriteOutputHdr   ) ) y_FAST%numOuts(Module_IceD)   = SIZE(InitOutData_IceD%WriteOutputHdr)*p_FAST%numIceLegs
    
    !......................................................
    ! Initialize the output channel names and units
@@ -2507,7 +2520,6 @@ SUBROUTINE FAST_ReadPrimaryFile( InputFile, p, OverrideAbortErrLev, ErrStat, Err
          ELSE
             p%CompIce = Module_Unknown
          END IF
-               
 
    !---------------------- INPUT FILES ---------------------------------------------
    CALL ReadCom( UnIn, InputFile, 'Section Header: Input Files', ErrStat2, ErrMsg2, UnEc )
@@ -3782,9 +3794,10 @@ SUBROUTINE FAST_Solution0(p_FAST, y_FAST, m_FAST, ED, BD, SrvD, AD14, AD, IfW, O
    ! Solve input-output relations; this section of code corresponds to Eq. (35) in Gasmi et al. (2013)
    ! This code will be specific to the underlying modules
    
-      ! the initial ServoDyn and IfW/Lidar inputs from Simulink:
+      ! the initial ElastoDyn, ServoDyn and IfW/Lidar inputs from Simulink:
+   CALL ED_SetExternalInputs( p_FAST, m_FAST, ED%Input(1), ED%p%HybridMode )
    IF ( p_FAST%CompServo == Module_SrvD ) CALL SrvD_SetExternalInputs( p_FAST, m_FAST, SrvD%Input(1) )   
-   IF ( p_FAST%CompInflow == Module_IfW ) CALL IfW_SetExternalInputs( IfW%p, m_FAST, ED%Output(1), IfW%Input(1) )  
+   IF ( p_FAST%CompInflow == Module_IfW ) CALL IfW_SetExternalInputs( IfW%p, m_FAST, ED%Output(1), IfW%Input(1) )
 
    CALL CalcOutputs_And_SolveForInputs(  n_t_global, m_FAST%t_global,  STATE_CURR, m_FAST%calcJacobian, m_FAST%NextJacCalcTime, &
                         p_FAST, m_FAST, ED, BD, SrvD, AD14, AD, IfW, OpFM, HD, SD, ExtPtfm, &
@@ -4391,9 +4404,11 @@ SUBROUTINE FAST_Solution(t_initial, n_t_global, p_FAST, y_FAST, m_FAST, ED, BD, 
       NumCorrections = p_FAST%NumCrctn
    END IF   
    
-      ! the ServoDyn inputs from Simulink are for t, not t+dt, so we're going to overwrite the inputs from
+      ! the ServoDyn and ElastoDyn inputs from Simulink are for t, not t+dt, so we're going to overwrite the inputs from
       ! the previous step before we extrapolate these inputs:
-   IF ( p_FAST%CompServo == Module_SrvD ) CALL SrvD_SetExternalInputs( p_FAST, m_FAST, SrvD%Input(1) )   
+   CALL ED_SetExternalInputs( p_FAST, m_FAST, ED%Input(1), ED%p%HybridMode )
+   IF ( p_FAST%CompServo == Module_SrvD ) CALL SrvD_SetExternalInputs( p_FAST, m_FAST, SrvD%Input(1) )
+
    
    !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
    !! ## Step 1.a: Extrapolate Inputs 
