@@ -46,7 +46,15 @@
 // two DWork arrays:
 #define WORKARY_OUTPUT 0
 #define WORKARY_INPUT 1
-
+// ********************* Global variables for RTHS ************************
+#define WORKARY_FLAG_OUTPUT 2
+#define WORKARY_FLAG_INPUT 3
+// ******************************* End ************************************
+//////////////////////////////////////
+bool FLAG = true;                 ////// DEBUG PURPOSE ONLY
+bool PRINT_FUNC = false;          //////
+bool PRINT_LOCAL_FUNC = false;   //////
+//////////////////////////////////////
 
 static double dt = 0;
 static double TMax = 0;
@@ -60,12 +68,24 @@ static char ErrMsg2[INTERFACE_STRING_LENGTH];       // make sure this is the sam
 static char InputFileName[INTERFACE_STRING_LENGTH]; // make sure this is the same size as IntfStrLen in FAST_Library.f90
 static int n_t_global = -2;  // counter to determine which fixed-step simulation time we are at currently (start at -2 for initialization)
 static int AbortErrLev = ErrID_Fatal;      // abort error level; compare with NWTC Library
+// ********************* Static variables for RTHS ************************
+static int NumInputsFlag = 2;   // 0:switchPC, 1:atTarget
+static int NumOutputsFlag = 1;  // 0:newTarget
+int flag;
+int count_max = 1000000;
+// ******************************* End ************************************
 
 // function definitions
 static int checkError(SimStruct *S);
 static void mdlTerminate(SimStruct *S); // defined here so I can call it from checkError
 static void getInputs(SimStruct *S, double *InputAry);
 static void setOutputs(SimStruct *S, double *OutputAry);
+// ******************** Declare functions for RTHS ************************
+static void setOutputs(SimStruct *S, double *OutputAry);
+static void getFlag(SimStruct *S, double *InputFlag);   // Use same data type as others
+static void setFlag(SimStruct *S, double *OutputFlag);
+// ******************************* End ************************************
+
 // Hard coding single Turbine 
 static int iTurb = 0; //zero based
 static int nTurbines = 1;
@@ -126,7 +146,36 @@ setOutputs(SimStruct *S, double *OutputAry){
 
 }
 
+// ******************** Define functions for RTHS *************************
+// This function reads sPC and atT from input port 2
+static void
+getFlag(SimStruct *S, double *InputFlag) {
+	if (PRINT_LOCAL_FUNC) {
+		ssPrintf("\n%s\n", "getFlag is called");
+	}
 
+	int     k;
+	InputRealPtrsType fPtrs = ssGetInputPortRealSignalPtrs(S, 1);
+
+	for (k = 0; k < ssGetDWorkWidth(S, WORKARY_FLAG_INPUT); k++) {
+		InputFlag[k] = (double)(*fPtrs[k]);
+	}
+
+}
+
+
+// This function set newTarget to output port 2
+static void
+setFlag(SimStruct *S, double *OutputFlag) {
+	if (PRINT_LOCAL_FUNC) {
+		ssPrintf("\n%s\n", "setFlag is called");
+	}
+
+	double *y = ssGetOutputPortRealSignal(S, 1);
+	y[0] = OutputFlag[0];
+
+}
+// ******************************* End ************************************
 
 /*====================*
  * S-function methods *
@@ -275,19 +324,23 @@ static void mdlInitializeSizes(SimStruct *S)
        ssSetNumContStates(S, 0);  /* how many continuous states? */
        ssSetNumDiscStates(S, 0);  /* how many discrete states?*/
 
-         /* sets input port characteristics */
-       if (!ssSetNumInputPorts(S, 1)) return; 
-       ssSetInputPortWidth(S, 0, NumInputs); // width of first input port
+	   // ***************** Modified the number of ports ******************
+	   /* sets input port characteristics */
+	   if (!ssSetNumInputPorts(S, 2)) return;      // @AS: second arg was modified from 1 to 2
+	   ssSetInputPortWidth(S, 0, NumInputs);       // width of first input port
+	   ssSetInputPortWidth(S, 1, NumInputsFlag);   // @AS: width of second input port
 
-       /*
-        * Set direct feedthrough flag (1=yes, 0=no).
-        * A port has direct feedthrough if the input is used in either
-        * the mdlOutputs or mdlGetTimeOfNextVarHit functions.
-        */
-       ssSetInputPortDirectFeedThrough(S, 0, 0); // no direct feedthrough because we're just putting everything in one update routine (acting like a discrete system)
+	  /*
+	   * Set direct feedthrough flag (1=yes, 0=no).
+	   * A port has direct feedthrough if the input is used in either
+	   * the mdlOutputs or mdlGetTimeOfNextVarHit functions.
+	   */
+	   ssSetInputPortDirectFeedThrough(S, 0, 0); // no direct feedthrough because we're just putting everything in one update routine (acting like a discrete system)
 
-       if (!ssSetNumOutputPorts(S, 1)) return;
-       ssSetOutputPortWidth(S, 0, NumOutputs);
+	   if (!ssSetNumOutputPorts(S, 2)) return;     // @AS: second arg was modified from 1 to 2
+	   ssSetOutputPortWidth(S, 0, NumOutputs);
+	   ssSetOutputPortWidth(S, 1, NumOutputsFlag); // @AS: width of second output port
+	   // ****************************** End *****************************
 
        ssSetNumSampleTimes(S, 1); // -> setting this > 0 calls mdlInitializeSampleTimes()
 
@@ -304,11 +357,24 @@ static void mdlInitializeSizes(SimStruct *S)
         */
        if(!ssSetNumDWork(   S, 2)) return;
 
-       ssSetDWorkWidth(   S, WORKARY_OUTPUT, ssGetOutputPortWidth(S, 0));
-       ssSetDWorkDataType(S, WORKARY_OUTPUT, SS_DOUBLE); /* use SS_DOUBLE if needed */
+	   // *********************** Modified arrays ************************
+	   if (!ssSetNumDWork(S, 4)) return;    // @AS: second arg was modified from 2 to 4
 
-       ssSetDWorkWidth(   S, WORKARY_INPUT, ssGetInputPortWidth(S, 0));
-       ssSetDWorkDataType(S, WORKARY_INPUT, SS_DOUBLE);
+	   ssSetDWorkWidth(S, WORKARY_OUTPUT, ssGetOutputPortWidth(S, 0));
+	   ssSetDWorkDataType(S, WORKARY_OUTPUT, SS_DOUBLE); /* use SS_DOUBLE if needed */
+	   ssSetDWorkWidth(S, WORKARY_FLAG_OUTPUT, ssGetOutputPortWidth(S, 1)); // @AS: Define array size for the flag
+	   ssSetDWorkDataType(S, WORKARY_FLAG_OUTPUT, SS_DOUBLE);                  // @AS: Define data type of the array
+
+	   ssSetDWorkWidth(S, WORKARY_INPUT, ssGetInputPortWidth(S, 0));
+	   ssSetDWorkDataType(S, WORKARY_INPUT, SS_DOUBLE);
+	   ssSetDWorkWidth(S, WORKARY_FLAG_INPUT, ssGetInputPortWidth(S, 1));   // @AS: Define array with size
+	   ssSetDWorkDataType(S, WORKARY_FLAG_INPUT, SS_DOUBLE);                   // @AS: Define data type of the array
+
+//        ssPrintf("\nssSetDWorkWidth for WORKARY_OUTPUT = %d\n", ssGetDWorkWidth(S, WORKARY_OUTPUT));
+//        ssPrintf("\nssSetDWorkWidth for WORKARY_INPUT = %d\n", ssGetDWorkWidth(S, WORKARY_INPUT));
+//        ssPrintf("\nssSetDWorkWidth for WORKARY_FLAG_OUTPUT = %d\n", ssGetDWorkWidth(S, WORKARY_FLAG_OUTPUT));
+//        ssPrintf("\nssSetDWorkWidth for WORKARY_FLAG_INPUT = %d\n", ssGetDWorkWidth(S, WORKARY_FLAG_INPUT));
+	   // ****************************** End *****************************
 
        ssSetNumNonsampledZCs(S, 0);
 
@@ -404,6 +470,10 @@ static void mdlOutputs(SimStruct *S, int_T tid)
     
     double *InputAry  = (double *)ssGetDWork(S, WORKARY_INPUT);
     double *OutputAry = (double *)ssGetDWork(S, WORKARY_OUTPUT);
+	// ********************** Define pointer to flag **********************
+	double *InputFlag = (double *)ssGetDWork(S, WORKARY_FLAG_INPUT);
+	double *OutputFlag = (double *)ssGetDWork(S, WORKARY_FLAG_OUTPUT);
+	// ******************************** End *******************************
 
     if (n_t_global == -1){ // first time to compute outputs:
 
@@ -417,6 +487,8 @@ static void mdlOutputs(SimStruct *S, int_T tid)
 
     setOutputs(S, OutputAry);
 
+	OutputFlag[0] = 1.0;          // OutputFlag[0] = newTarget
+	setFlag(S, OutputFlag);
 }
 
 
@@ -442,8 +514,70 @@ static void mdlUpdate(SimStruct *S, int_T tid)
      */
     double *InputAry  = (double *)ssGetDWork(S, WORKARY_INPUT);
     double *OutputAry = (double *)ssGetDWork(S, WORKARY_OUTPUT);
+	// ********************** Define pointer to flag **********************
+	double *InputFlag = (double *)ssGetDWork(S, WORKARY_FLAG_INPUT);
+	double *OutputFlag = (double *)ssGetDWork(S, WORKARY_FLAG_OUTPUT);
+	// ******************************** End *******************************
 
-    //time_T t = ssGetSampleTime(S, 0);
+	// ******* "Wait" until Predictor-Corrector receives new target *******
+	if (FLAG) {
+		//         OutputFlag[0] = 1.0;          // OutputFlag[0] = newTarget
+		//         setFlag(S,OutputFlag);
+		flag = 0;
+		int count = 0;
+		while (flag == 0) {
+			setFlag(S, OutputFlag);
+			getFlag(S, InputFlag);
+			flag = InputFlag[0];    // InputFlag[0] = switchPC; Checking if newTarget arrives at Predictor-Corrector
+			count++;
+			if (count > count_max) {
+				ssPrintf("\nmdlUpdate did not receive switchPC = 1 for %d loops\n", count_max);
+				break;
+			}
+		}
+	}
+	// ******************************** End *******************************
+
+
+	// ************ "Wait" until newtarget & switchPC are reset ***********
+	if (FLAG) {
+		OutputFlag[0] = 0.0;
+		setFlag(S, OutputFlag); // newTarget = 0
+		flag = 1;
+		int count = 0;
+		while (flag == 1) {
+			getFlag(S, InputFlag);
+			setFlag(S, OutputFlag); // newTarget = 0
+			flag = InputFlag[0];    // InputFlag[0] = switchPC
+			count++;
+			if (count > count_max) {
+				ssPrintf("\nmdlUpdate did not receive switchPC = 0 for %d loops\n", count_max);
+				break;
+			}
+		}
+	}
+
+	// ******************************** End *******************************
+
+		//time_T t = ssGetSampleTime(S, 0);
+	// **************** Wait until actuator reaches target ****************
+	if (FLAG) {
+		if (n_t_global > 0) {
+			flag = 0;
+			getFlag(S, InputFlag);
+			int count = 0;
+			while (flag == 0) {
+				getFlag(S, InputFlag);
+				flag = InputFlag[1];    // InputFlag[1] = atTarget
+				count++;
+				if (count > count_max) {
+					ssPrintf("\nmdlUpdate did not receive atTarget = 1 for %d loops\n", count_max);
+					break;
+				}
+			}
+		}
+	}
+	// ******************************** End *******************************
 
     getInputs(S, InputAry);
 
