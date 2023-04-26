@@ -28,12 +28,14 @@ if (ispc && built_with_visualStudio)
     switch computer('arch')
         case 'win64'
             % this is set up for files generated using the x64 configuration of vs-build
-            libName = 'OpenFAST-Simulink-hybrid_x64';
+%             libName = 'OpenFAST-Simulink-hybrid_x64';
+            libName = 'OpenFAST-Simulink_x64';
 
         case 'win32' 
             % this is set up for files generated using the x86
             % configuration of vs-build (win32 will work only on older versions of Matlab)
-            libName = 'OpenFAST-Simulink-hybrid_Win32';
+%             libName = 'OpenFAST-Simulink-hybrid_Win32';
+            libName = 'OpenFAST-Simulink_Win32';
     end
     
 else    

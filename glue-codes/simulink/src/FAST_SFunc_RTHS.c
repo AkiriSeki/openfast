@@ -20,7 +20,7 @@
 #define S_FUNCTION_LEVEL 2
 
 #ifndef S_FUNCTION_NAME
-#define S_FUNCTION_NAME FAST_SFunc
+#define S_FUNCTION_NAME FAST_SFunc_RTHS
 #endif
 /*
  * Need to include simstruc.h for the definition of the SimStruct and
