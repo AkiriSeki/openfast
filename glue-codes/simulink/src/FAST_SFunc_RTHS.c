@@ -30,6 +30,7 @@
 #include "FAST_Library.h"
 #include <math.h>
 
+
 #ifdef MATLAB_MEX_FILE  // @mcd: these header files are not allowed for code generation / Simulink-RT
 #include "mex.h"     // for mexPutVariable
 #include "matrix.h"  // for mxCreateDoubleScalar
@@ -50,17 +51,18 @@
 #define WORKARY_FLAG_OUTPUT 2
 #define WORKARY_FLAG_INPUT 3
 // ******************************* End ************************************
+
 //////////////////////////////////////
-bool FLAG = true;                 ////// DEBUG PURPOSE ONLY
+bool FLAG = true;               ////// DEBUG PURPOSE ONLY
 bool PRINT_FUNC = false;          //////
 bool PRINT_LOCAL_FUNC = false;   //////
 //////////////////////////////////////
 
 static double dt = 0;
 static double TMax = 0;
-static int NumInputs = NumFixedInputs;
+static int NumInputs = NumFixedInputs; // @AS: NumFixedInputs = 12, defined in FAST_Library.h
 static int NumAddInputs = 0;  // number of additional inputs
-static int NumOutputs = 1;
+static int NumOutputs = 1;    // @AS: Why this is 1? not 6? (forces)
 static int ErrStat = 0;
 static char ErrMsg[INTERFACE_STRING_LENGTH];        // make sure this is the same size as IntfStrLen in FAST_Library.f90
 static int ErrStat2 = 0;
@@ -75,17 +77,18 @@ int flag;
 int count_max = 1000000;
 // ******************************* End ************************************
 
+
 // function definitions
 static int checkError(SimStruct *S);
 static void mdlTerminate(SimStruct *S); // defined here so I can call it from checkError
 static void getInputs(SimStruct *S, double *InputAry);
-static void setOutputs(SimStruct *S, double *OutputAry);
 // ******************** Declare functions for RTHS ************************
 static void setOutputs(SimStruct *S, double *OutputAry);
 static void getFlag(SimStruct *S, double *InputFlag);   // Use same data type as others
 static void setFlag(SimStruct *S, double *OutputFlag);
 // ******************************* End ************************************
 
+// static void getInputs(SimStruct *S, double *InputAry, double *InputFlag);
 // Hard coding single Turbine 
 static int iTurb = 0; //zero based
 static int nTurbines = 1;
@@ -119,8 +122,9 @@ checkError(SimStruct *S){
       ssPrintf("\n%s\n", ErrMsg);
    }
    return 0;
-
+   
 }
+
 
 static void
 getInputs(SimStruct *S, double *InputAry){
@@ -134,48 +138,51 @@ getInputs(SimStruct *S, double *InputAry){
    
 }
 
+
 static void
 setOutputs(SimStruct *S, double *OutputAry){
 
    int     k;
    double *y = ssGetOutputPortRealSignal(S, 0);
 
-   for (k = 0; k < ssGetOutputPortWidth(S, WORKARY_OUTPUT); k++) {
+   for (k = 0; k < ssGetDWorkWidth(S, WORKARY_OUTPUT); k++) {
       y[k] = OutputAry[k];
    }
 
 }
 
+
 // ******************** Define functions for RTHS *************************
 // This function reads sPC and atT from input port 2
 static void
-getFlag(SimStruct *S, double *InputFlag) {
-	if (PRINT_LOCAL_FUNC) {
-		ssPrintf("\n%s\n", "getFlag is called");
-	}
+getFlag(SimStruct *S, double *InputFlag){
+    if (PRINT_LOCAL_FUNC){
+    ssPrintf("\n%s\n", "getFlag is called");
+    }
 
-	int     k;
-	InputRealPtrsType fPtrs = ssGetInputPortRealSignalPtrs(S, 1);
-
-	for (k = 0; k < ssGetDWorkWidth(S, WORKARY_FLAG_INPUT); k++) {
-		InputFlag[k] = (double)(*fPtrs[k]);
-	}
-
+   int     k;
+   InputRealPtrsType fPtrs = ssGetInputPortRealSignalPtrs(S, 1);
+   
+   for (k = 0; k < ssGetDWorkWidth(S, WORKARY_FLAG_INPUT); k++) {
+      InputFlag[k] = (double)(*fPtrs[k]);
+   }
+   
 }
 
 
 // This function set newTarget to output port 2
 static void
-setFlag(SimStruct *S, double *OutputFlag) {
-	if (PRINT_LOCAL_FUNC) {
-		ssPrintf("\n%s\n", "setFlag is called");
-	}
+setFlag(SimStruct *S, double *OutputFlag){
+    if (PRINT_LOCAL_FUNC){
+        ssPrintf("\n%s\n", "setFlag is called");
+    }
 
-	double *y = ssGetOutputPortRealSignal(S, 1);
-	y[0] = OutputFlag[0];
-
+   double *y = ssGetOutputPortRealSignal(S, 1);
+   y[0] = OutputFlag[0];
+   
 }
 // ******************************* End ************************************
+
 
 /*====================*
  * S-function methods *
@@ -188,6 +195,9 @@ setFlag(SimStruct *S, double *OutputFlag) {
  */
 static void mdlInitializeSizes(SimStruct *S)
 {
+    if (PRINT_FUNC){
+    ssPrintf("\n%s\n", "mdlInitializeSizes is called");
+    }
 
    int i = 0;
    int j = 0;
@@ -206,14 +216,14 @@ static void mdlInitializeSizes(SimStruct *S)
 
    if (n_t_global == -2) {
 
-            /* Expected S-Function Input Parameter(s) */
+      /* Expected S-Function Input Parameter(s) */
       ssSetNumSFcnParams(S, NUM_PARAM);  /* Number of expected parameters */
       if (ssGetNumSFcnParams(S) != ssGetSFcnParamsCount(S)) {
            /* Return if number of expected != number of actual parameters */
            return;
        }
     
-         // The parameters should not be changed during the course of a simulation
+       // The parameters should not be changed during the course of a simulation
        ssSetSFcnParamTunable(S, PARAM_FILENAME, SS_PRM_NOT_TUNABLE); 
        mxGetString(ssGetSFcnParam(S, PARAM_FILENAME), InputFileName, INTERFACE_STRING_LENGTH);
 
@@ -247,7 +257,6 @@ static void mdlInitializeSizes(SimStruct *S)
        }
 
        // set this before possibility of error in Fortran library:
-
        ssSetOptions(S,
           SS_OPTION_CALL_TERMINATE_ON_EXIT);
 
@@ -318,31 +327,31 @@ static void mdlInitializeSizes(SimStruct *S)
           return;
        }
        #endif
-       //  ---------------------------------------------  
+        //  ---------------------------------------------  
     
 
-       ssSetNumContStates(S, 0);  /* how many continuous states? */
-       ssSetNumDiscStates(S, 0);  /* how many discrete states?*/
+        ssSetNumContStates(S, 0);  /* how many continuous states? */
+        ssSetNumDiscStates(S, 0);  /* how many discrete states?*/
+       
+       // ***************** Modified the number of ports ******************
+       /* sets input port characteristics */
+        if (!ssSetNumInputPorts(S, 2)) return;      // @AS: second arg was modified from 1 to 2
+        ssSetInputPortWidth(S, 0, NumInputs);       // width of first input port
+        ssSetInputPortWidth(S, 1, NumInputsFlag);   // @AS: width of second input port
 
-	   // ***************** Modified the number of ports ******************
-	   /* sets input port characteristics */
-	   if (!ssSetNumInputPorts(S, 2)) return;      // @AS: second arg was modified from 1 to 2
-	   ssSetInputPortWidth(S, 0, NumInputs);       // width of first input port
-	   ssSetInputPortWidth(S, 1, NumInputsFlag);   // @AS: width of second input port
+       /*
+        * Set direct feedthrough flag (1=yes, 0=no).
+        * A port has direct feedthrough if the input is used in either
+        * the mdlOutputs or mdlGetTimeOfNextVarHit functions.
+        */
+        ssSetInputPortDirectFeedThrough(S, 0, 0); // no direct feedthrough because we're just putting everything in one update routine (acting like a discrete system)
 
-	  /*
-	   * Set direct feedthrough flag (1=yes, 0=no).
-	   * A port has direct feedthrough if the input is used in either
-	   * the mdlOutputs or mdlGetTimeOfNextVarHit functions.
-	   */
-	   ssSetInputPortDirectFeedThrough(S, 0, 0); // no direct feedthrough because we're just putting everything in one update routine (acting like a discrete system)
-
-	   if (!ssSetNumOutputPorts(S, 2)) return;     // @AS: second arg was modified from 1 to 2
-	   ssSetOutputPortWidth(S, 0, NumOutputs);
-	   ssSetOutputPortWidth(S, 1, NumOutputsFlag); // @AS: width of second output port
-	   // ****************************** End *****************************
-
-       ssSetNumSampleTimes(S, 1); // -> setting this > 0 calls mdlInitializeSampleTimes()
+        if (!ssSetNumOutputPorts(S, 2)) return;     // @AS: second arg was modified from 1 to 2
+        ssSetOutputPortWidth(S, 0, NumOutputs);
+        ssSetOutputPortWidth(S, 1, NumOutputsFlag); // @AS: width of second output port
+        // ****************************** End *****************************
+       
+        ssSetNumSampleTimes(S, 1); // -> setting this > 0 calls mdlInitializeSampleTimes()
 
        /* 
         * If your Fortran code uses REAL for the state, input, and/or output 
@@ -355,35 +364,38 @@ static void mdlInitializeSizes(SimStruct *S)
         * data when needed. You can use as many DWork vectors as you like 
         * for both input and output (or hard-code local variables).
         */
-       if(!ssSetNumDWork(   S, 2)) return;
+        
+        
+        // *********************** Modified arrays ************************
+        if(!ssSetNumDWork(S, 4)) return;    // @AS: second arg was modified from 2 to 4
 
-	   // *********************** Modified arrays ************************
-	   if (!ssSetNumDWork(S, 4)) return;    // @AS: second arg was modified from 2 to 4
-
-	   ssSetDWorkWidth(S, WORKARY_OUTPUT, ssGetOutputPortWidth(S, 0));
-	   ssSetDWorkDataType(S, WORKARY_OUTPUT, SS_DOUBLE); /* use SS_DOUBLE if needed */
-	   ssSetDWorkWidth(S, WORKARY_FLAG_OUTPUT, ssGetOutputPortWidth(S, 1)); // @AS: Define array size for the flag
-	   ssSetDWorkDataType(S, WORKARY_FLAG_OUTPUT, SS_DOUBLE);                  // @AS: Define data type of the array
-
-	   ssSetDWorkWidth(S, WORKARY_INPUT, ssGetInputPortWidth(S, 0));
-	   ssSetDWorkDataType(S, WORKARY_INPUT, SS_DOUBLE);
-	   ssSetDWorkWidth(S, WORKARY_FLAG_INPUT, ssGetInputPortWidth(S, 1));   // @AS: Define array with size
-	   ssSetDWorkDataType(S, WORKARY_FLAG_INPUT, SS_DOUBLE);                   // @AS: Define data type of the array
-
+        ssSetDWorkWidth(   S, WORKARY_OUTPUT, ssGetOutputPortWidth(S, 0));
+        ssSetDWorkDataType(S, WORKARY_OUTPUT, SS_DOUBLE); /* use SS_DOUBLE if needed */
+        ssSetDWorkWidth(   S, WORKARY_FLAG_OUTPUT, ssGetOutputPortWidth(S, 1)); // @AS: Define array size for the flag
+        ssSetDWorkDataType(S, WORKARY_FLAG_OUTPUT, SS_DOUBLE);                  // @AS: Define data type of the array
+        
+        ssSetDWorkWidth(   S, WORKARY_INPUT, ssGetInputPortWidth(S, 0));
+        ssSetDWorkDataType(S, WORKARY_INPUT, SS_DOUBLE);
+        ssSetDWorkWidth(   S, WORKARY_FLAG_INPUT, ssGetInputPortWidth(S, 1));   // @AS: Define array with size
+        ssSetDWorkDataType(S, WORKARY_FLAG_INPUT, SS_DOUBLE);                   // @AS: Define data type of the array
+        
 //        ssPrintf("\nssSetDWorkWidth for WORKARY_OUTPUT = %d\n", ssGetDWorkWidth(S, WORKARY_OUTPUT));
 //        ssPrintf("\nssSetDWorkWidth for WORKARY_INPUT = %d\n", ssGetDWorkWidth(S, WORKARY_INPUT));
 //        ssPrintf("\nssSetDWorkWidth for WORKARY_FLAG_OUTPUT = %d\n", ssGetDWorkWidth(S, WORKARY_FLAG_OUTPUT));
 //        ssPrintf("\nssSetDWorkWidth for WORKARY_FLAG_INPUT = %d\n", ssGetDWorkWidth(S, WORKARY_FLAG_INPUT));
-	   // ****************************** End *****************************
+       // ****************************** End *****************************
 
-       ssSetNumNonsampledZCs(S, 0);
+        ssSetNumNonsampledZCs(S, 0);
 
        /* Specify the sim state compliance to be same as a built-in block */
        /* see sfun_simstate.c for example of other possible settings */
-       ssSetSimStateCompliance(S, USE_DEFAULT_SIM_STATE);
+        ssSetSimStateCompliance(S, USE_DEFAULT_SIM_STATE);
 
-       // ssSetOptions(S, 0); // bjj: what does this do? (not sure what 0 means: no options?) set option to call Terminate earlier...
+        // ssSetOptions(S, 0); // bjj: what does this do? (not sure what 0 means: no options?) set option to call Terminate earlier...
+   }
 
+    if (PRINT_FUNC){
+        ssPrintf("\n%s\n", "mdlInitializeSizes is over");
     }
 }
 
@@ -395,6 +407,10 @@ static void mdlInitializeSizes(SimStruct *S)
  */
 static void mdlInitializeSampleTimes(SimStruct *S)
 {
+    if (PRINT_FUNC){
+        ssPrintf("\n%s\n", "mdlInitializeSampleTimes is called");
+    }
+    
 
     /* 
      * If the Fortran code implicitly steps time
@@ -409,7 +425,11 @@ static void mdlInitializeSampleTimes(SimStruct *S)
     ssSetModelReferenceSampleTimeDefaultInheritance(S);
 }
 
+
+
 #undef MDL_INITIALIZE_CONDITIONS   /* Change to #undef to remove function */
+
+
 
 #define MDL_START  /* Change to #undef to remove function */
 #if defined(MDL_START) 
@@ -421,12 +441,15 @@ static void mdlInitializeSampleTimes(SimStruct *S)
    */
   static void mdlStart(SimStruct *S)
   {
+    if (PRINT_FUNC){
+        ssPrintf("\n%s\n", "mdlStart is called");
+    }
 
-     /* bjj: this is really the initial output; I'd really like to have the inputs from Simulink here.... maybe if we put it in mdlOutputs? 
-        but then do we need to say we have direct feed-through?
-     */
-     double *InputAry = (double *)ssGetDWork(S, WORKARY_INPUT); //malloc(NumInputs*sizeof(double));   
-     double *OutputAry = (double *)ssGetDWork(S, WORKARY_OUTPUT);
+    /* bjj: this is really the initial output; I'd really like to have the inputs from Simulink here.... maybe if we put it in mdlOutputs? 
+       but then do we need to say we have direct feed-through?
+    */
+    double *InputAry = (double *)ssGetDWork(S, WORKARY_INPUT); //malloc(NumInputs*sizeof(double));   
+    double *OutputAry = (double *)ssGetDWork(S, WORKARY_OUTPUT);
 
      //n_t_global is -1 here; maybe use this fact in mdlOutputs
      if (n_t_global == -1){ // first time to compute outputs:
@@ -438,6 +461,12 @@ static void mdlInitializeSampleTimes(SimStruct *S)
         if (checkError(S)) return;
 
      }
+
+
+
+    if (PRINT_FUNC){
+        ssPrintf("\n%s\n", "mdlStart is over");
+    }
   }
 #endif /*  MDL_START */
 
@@ -451,6 +480,9 @@ static void mdlInitializeSampleTimes(SimStruct *S)
  */
 static void mdlOutputs(SimStruct *S, int_T tid)
 {
+    if (PRINT_FUNC){
+        ssPrintf("\n%s\n", "mdlOutput is called");
+    }
 
     /* 
      *    For Fixed Step Code
@@ -470,13 +502,13 @@ static void mdlOutputs(SimStruct *S, int_T tid)
     
     double *InputAry  = (double *)ssGetDWork(S, WORKARY_INPUT);
     double *OutputAry = (double *)ssGetDWork(S, WORKARY_OUTPUT);
-	// ********************** Define pointer to flag **********************
-	double *InputFlag = (double *)ssGetDWork(S, WORKARY_FLAG_INPUT);
-	double *OutputFlag = (double *)ssGetDWork(S, WORKARY_FLAG_OUTPUT);
-	// ******************************** End *******************************
+    // ********************** Define pointer to flag **********************
+    double *InputFlag = (double *)ssGetDWork(S, WORKARY_FLAG_INPUT);
+    double *OutputFlag = (double *)ssGetDWork(S, WORKARY_FLAG_OUTPUT);
+    // ******************************** End *******************************
+
 
     if (n_t_global == -1){ // first time to compute outputs:
-
        getInputs(S, InputAry);
 
        FAST_Start(&iTurb, &NumInputs, &NumOutputs, InputAry, OutputAry, &ErrStat, ErrMsg);
@@ -484,11 +516,10 @@ static void mdlOutputs(SimStruct *S, int_T tid)
        if (checkError(S)) return;
 
     }
-
     setOutputs(S, OutputAry);
-
-	OutputFlag[0] = 1.0;          // OutputFlag[0] = newTarget
-	setFlag(S, OutputFlag);
+    
+    OutputFlag[0] = 1.0;          // OutputFlag[0] = newTarget
+    setFlag(S,OutputFlag);
 }
 
 
@@ -503,6 +534,9 @@ static void mdlOutputs(SimStruct *S, int_T tid)
  */
 static void mdlUpdate(SimStruct *S, int_T tid)
 {
+    if (PRINT_FUNC){
+        ssPrintf("\n%s\n", "mdlUpdate is called");
+    }
 
     /* 
      *    For Fixed Step Code Only
@@ -512,83 +546,88 @@ static void mdlUpdate(SimStruct *S, int_T tid)
      * in mdlOutputs().  The states in the Fortran code need not be
      * continuous if you call your code from here.
      */
+    
     double *InputAry  = (double *)ssGetDWork(S, WORKARY_INPUT);
     double *OutputAry = (double *)ssGetDWork(S, WORKARY_OUTPUT);
-	// ********************** Define pointer to flag **********************
-	double *InputFlag = (double *)ssGetDWork(S, WORKARY_FLAG_INPUT);
-	double *OutputFlag = (double *)ssGetDWork(S, WORKARY_FLAG_OUTPUT);
-	// ******************************** End *******************************
+    // ********************** Define pointer to flag **********************
+    double *InputFlag = (double *)ssGetDWork(S, WORKARY_FLAG_INPUT);
+    double *OutputFlag = (double *)ssGetDWork(S, WORKARY_FLAG_OUTPUT);
+    // ******************************** End *******************************
 
-	// ******* "Wait" until Predictor-Corrector receives new target *******
-	if (FLAG) {
-		//         OutputFlag[0] = 1.0;          // OutputFlag[0] = newTarget
-		//         setFlag(S,OutputFlag);
-		flag = 0;
-		int count = 0;
-		while (flag == 0) {
-			setFlag(S, OutputFlag);
-			getFlag(S, InputFlag);
-			flag = InputFlag[0];    // InputFlag[0] = switchPC; Checking if newTarget arrives at Predictor-Corrector
-			count++;
-			if (count > count_max) {
-				ssPrintf("\nmdlUpdate did not receive switchPC = 1 for %d loops\n", count_max);
-				break;
-			}
-		}
-	}
-	// ******************************** End *******************************
-
-
-	// ************ "Wait" until newtarget & switchPC are reset ***********
-	if (FLAG) {
-		OutputFlag[0] = 0.0;
-		setFlag(S, OutputFlag); // newTarget = 0
-		flag = 1;
-		int count = 0;
-		while (flag == 1) {
-			getFlag(S, InputFlag);
-			setFlag(S, OutputFlag); // newTarget = 0
-			flag = InputFlag[0];    // InputFlag[0] = switchPC
-			count++;
-			if (count > count_max) {
-				ssPrintf("\nmdlUpdate did not receive switchPC = 0 for %d loops\n", count_max);
-				break;
-			}
-		}
-	}
-
-	// ******************************** End *******************************
-
-		//time_T t = ssGetSampleTime(S, 0);
-	// **************** Wait until actuator reaches target ****************
-	if (FLAG) {
-		if (n_t_global > 0) {
-			flag = 0;
-			getFlag(S, InputFlag);
-			int count = 0;
-			while (flag == 0) {
-				getFlag(S, InputFlag);
-				flag = InputFlag[1];    // InputFlag[1] = atTarget
-				count++;
-				if (count > count_max) {
-					ssPrintf("\nmdlUpdate did not receive atTarget = 1 for %d loops\n", count_max);
-					break;
-				}
-			}
-		}
-	}
-	// ******************************** End *******************************
-
-    getInputs(S, InputAry);
-
-    /* ==== Call the Fortran routine (args are pass-by-reference) */
+    // ******* "Wait" until Predictor-Corrector receives new target *******
+    if (FLAG){
+//         OutputFlag[0] = 1.0;          // OutputFlag[0] = newTarget
+//         setFlag(S,OutputFlag);
+        flag = 0;
+        for (int count=0;count<count_max;count++){
+            setFlag(S,OutputFlag);
+            getFlag(S, InputFlag);
+            flag = InputFlag[0];    // InputFlag[0] = switchPC; Checking if newTarget arrives at Predictor-Corrector
+            if (flag != 0){break;}
+            if (count == count_max-1){
+                ssPrintf("\nmdlUpdate did not receive switchPC = 1 for %d loops\n", count_max);
+            }
+        }
+    }
+    // ******************************** End *******************************
     
+    
+    // ************ "Wait" until newtarget & switchPC are reset ***********
+
+    if (FLAG){
+        OutputFlag[0] = 0.0;                        
+        setFlag(S, OutputFlag); // newTarget = 0 !!! THIS DOES NOT WORK !!!
+        /*
+         *
+         * For some reason, this newTarget = 0 cannot be seen in a scope of this machine.
+         *
+        */
+        flag = 1;
+        for (int count = 0;count < count_max;count++){
+            setFlag(S, OutputFlag); // newTarget = 0
+            getFlag(S, InputFlag);            
+            flag = InputFlag[0];    // InputFlag[0] = switchPC
+            //ssPrintf("\swPC = %.1f\n", InputFlag[0]);
+            if (flag != 1){break;}
+            if (count == count_max-1){
+                ssPrintf("\nmdlUpdate did not receive switchPC = 0 for %d loops\n", count_max);
+            }
+        }
+    }
+    
+    // ******************************** End *******************************
+
+
+    //time_T t = ssGetSampleTime(S, 0);
+    // **************** Wait until actuator reaches target ****************
+    if (FLAG){
+        if (n_t_global > 0){
+            flag = 0;
+            getFlag(S, InputFlag);
+            int count = 0;
+            for (int count = 0;count<count_max;count++){
+                getFlag(S, InputFlag);
+                flag = InputFlag[1];    // InputFlag[1] = atTarget
+                if (flag != 0){break;}
+                if (count == count_max-1){
+                    ssPrintf("\nmdlUpdate did not receive atTarget = 1 for %d loops\n", count_max);
+                }
+            }
+        }
+    }
+    // ******************************** End *******************************
+    getInputs(S, InputAry); // Get motions from Qualisys and its calculation.
+    
+    
+    /* ==== Call the Fortran routine (args are pass-by-reference) */
     FAST_Update(&iTurb, &NumInputs, &NumOutputs, InputAry, OutputAry, &ErrStat, ErrMsg);
     n_t_global = n_t_global + 1;
 
     if (checkError(S)) return;
 
-    setOutputs(S, OutputAry);
+    setOutputs(S, OutputAry);   // Now forces for the next step is avilable
+       
+    
 
 }
 #endif /* MDL_UPDATE */
@@ -604,6 +643,10 @@ static void mdlUpdate(SimStruct *S, int_T tid)
  */
 static void mdlTerminate(SimStruct *S)
 {
+    if (PRINT_FUNC){
+        ssPrintf("\n%s\n", "mdlTerminate is called");
+    }
+
    if (n_t_global > -2){ // just in case we've never initialized, check this time step
       bool tr = 1; // Yes, stoptheprogram
       FAST_End(&iTurb, &tr);

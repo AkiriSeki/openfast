@@ -13,7 +13,7 @@
 % Run `mex -setup` in Matlab to configure a C compiler if you have not already done so.
 
 
-mexname = 'FAST_SFunc_RTHS'; % base name of the resulting mex file
+mexname = 'FAST_SFunc'; % base name of the resulting mex file
 
 built_with_visualStudio = true; %if the libraries were built with cmake, set to false
 
