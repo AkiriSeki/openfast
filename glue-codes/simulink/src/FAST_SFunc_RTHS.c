@@ -74,7 +74,7 @@ static int AbortErrLev = ErrID_Fatal;      // abort error level; compare with NW
 static int NumInputsFlag = 2;   // 0:switchPC, 1:atTarget
 static int NumOutputsFlag = 1;  // 0:newTarget
 int flag;
-int count_max = 1000000;
+int count_max = 10000000;
 // ******************************* End ************************************
 
 
