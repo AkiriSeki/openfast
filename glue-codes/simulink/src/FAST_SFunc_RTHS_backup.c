@@ -74,6 +74,7 @@ static int AbortErrLev = ErrID_Fatal;      // abort error level; compare with NW
 static int NumInputsFlag = 2;   // 0:switchPC, 1:atTarget
 static int NumOutputsFlag = 1;  // 0:newTarget
 int flag;
+int count_max = 10000000;
 // ******************************* End ************************************
 
 
@@ -449,10 +450,6 @@ static void mdlInitializeSampleTimes(SimStruct *S)
     */
     double *InputAry = (double *)ssGetDWork(S, WORKARY_INPUT); //malloc(NumInputs*sizeof(double));   
     double *OutputAry = (double *)ssGetDWork(S, WORKARY_OUTPUT);
-    // ********************** Define pointer to flag **********************
-    double *InputFlag = (double *)ssGetDWork(S, WORKARY_FLAG_INPUT);
-    double *OutputFlag = (double *)ssGetDWork(S, WORKARY_FLAG_OUTPUT);
-    // ******************************** End *******************************
 
      //n_t_global is -1 here; maybe use this fact in mdlOutputs
      if (n_t_global == -1){ // first time to compute outputs:
@@ -521,7 +518,7 @@ static void mdlOutputs(SimStruct *S, int_T tid)
     }
     setOutputs(S, OutputAry);
     
-    OutputFlag[0] = 1.0;          // OutputFlag[0]: newTarget = 1
+    OutputFlag[0] = 1.0;          // OutputFlag[0] = newTarget
     setFlag(S,OutputFlag);
 }
 
@@ -557,74 +554,80 @@ static void mdlUpdate(SimStruct *S, int_T tid)
     double *OutputFlag = (double *)ssGetDWork(S, WORKARY_FLAG_OUTPUT);
     // ******************************** End *******************************
 
-    // **************** Wait until actuator reaches target ****************
+    // ******* "Wait" until Predictor-Corrector receives new target *******
     if (FLAG){
-        OutputFlag[0] = 0.0;          // OutputFlag[0] = newTarget
-        setFlag(S,OutputFlag);
-        ssPrintf("\nInputFlag[1] = atTarget = %.3f\n", InputFlag[1]);
+//         OutputFlag[0] = 1.0;          // OutputFlag[0] = newTarget
+//         setFlag(S,OutputFlag);
         flag = 0;
-        while (flag != 1){
+        for (int count=0;count<count_max;count++){
+            setFlag(S,OutputFlag);
             getFlag(S, InputFlag);
-            flag = (int)InputFlag[1];    // InputFlag[1] = atTarget
-//             count++;
-//             if (count > count_max){
-//                 ssPrintf("\nmdlUpdate did not receive atTarget = 1 for %d loops\n", count_max);
-//                 break;
-//             }
+            flag = InputFlag[0];    // InputFlag[0] = switchPC; Checking if newTarget arrives at Predictor-Corrector
+            if (flag != 0){break;}
+            if (count == count_max-1){
+                ssPrintf("\nmdlUpdate did not receive switchPC = 1 for %d loops\n", count_max);
+            }
         }
     }
     // ******************************** End *******************************
     
-
-    // Get motions from Qualisys
-    getInputs(S, InputAry);
-    // Call the Fortran routine (args are pass-by-reference)
-    FAST_Update(&iTurb, &NumInputs, &NumOutputs, InputAry, OutputAry, &ErrStat, ErrMsg);
-    // Advance time step
-    n_t_global = n_t_global + 1;
-    if (checkError(S)) return;
-    // Now forces for the next step is avilable
-    setOutputs(S, OutputAry);
-       
-
     
-    // ******* "Wait" until Predictor-Corrector receives new target *******
+    // ************ "Wait" until newtarget & switchPC are reset ***********
+
     if (FLAG){
-        OutputFlag[0] = 1;          // OutputFlag[0] = newTarget
-        setFlag(S,OutputFlag);
-        flag = 0;
-//         int count = 0;
-        while (flag != 1){
-            getFlag(S, InputFlag);
-            flag = (int)InputFlag[0];    // InputFlag[0] = switchPC; Checking if newTarget arrives at Predictor-Corrector
-//             count++;
-//             if (count > count_max){
-//                 ssPrintf("\nmdlUpdate did not receive switchPC = 1 for %d loops\n", count_max);
-//                 break;
-//             }
+        OutputFlag[0] = 0.0;                        
+        setFlag(S, OutputFlag); // newTarget = 0 !!! THIS DOES NOT WORK !!!
+        /*
+         *
+         * For some reason, this newTarget = 0 cannot be seen in a scope of this machine.
+         *
+        */
+        flag = 1;
+        for (int count = 0;count < count_max;count++){
+            setFlag(S, OutputFlag); // newTarget = 0
+            getFlag(S, InputFlag);            
+            flag = InputFlag[0];    // InputFlag[0] = switchPC
+            //ssPrintf("\swPC = %.1f\n", InputFlag[0]);
+            if (flag != 1){break;}
+            if (count == count_max-1){
+                ssPrintf("\nmdlUpdate did not receive switchPC = 0 for %d loops\n", count_max);
+            }
         }
     }
+    
     // ******************************** End *******************************
 
 
     //time_T t = ssGetSampleTime(S, 0);
-    // ************ "Wait" until newtarget & switchPC are reset ***********
+    // **************** Wait until actuator reaches target ****************
     if (FLAG){
-        OutputFlag[0] = 0;          // outputFlag[0] = newtarget
-        setFlag(S,OutputFlag);
-        flag = 1;
-//         int count = 0;
-        while (flag != 0){
+        if (n_t_global > 0){
+            flag = 0;
             getFlag(S, InputFlag);
-            flag = (int)InputFlag[0];    // InputFlag[0] = switchPC
-//             count++;
-//             if (count > count_max){
-//                 ssPrintf("\nmdlUpdate did not receive switchPC = 0 for %d loops\n", count_max);
-//                 break;
-//             }
+            int count = 0;
+            for (int count = 0;count<count_max;count++){
+                getFlag(S, InputFlag);
+                flag = InputFlag[1];    // InputFlag[1] = atTarget
+                if (flag != 0){break;}
+                if (count == count_max-1){
+                    ssPrintf("\nmdlUpdate did not receive atTarget = 1 for %d loops\n", count_max);
+                }
+            }
         }
     }
     // ******************************** End *******************************
+    getInputs(S, InputAry); // Get motions from Qualisys and its calculation.
+    
+    
+    /* ==== Call the Fortran routine (args are pass-by-reference) */
+    FAST_Update(&iTurb, &NumInputs, &NumOutputs, InputAry, OutputAry, &ErrStat, ErrMsg);
+    n_t_global = n_t_global + 1;
+
+    if (checkError(S)) return;
+
+    setOutputs(S, OutputAry);   // Now forces for the next step is avilable
+       
+    
 
 }
 #endif /* MDL_UPDATE */
