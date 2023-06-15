@@ -20,7 +20,7 @@
 ! limitations under the License.
 !
 !**********************************************************************************************************************************
-PROGRAM FAST
+PROGRAM FAST_Hybrid
 ! This program models 2- or 3-bladed turbines of a standard configuration.
 !
 ! noted compilation switches:
