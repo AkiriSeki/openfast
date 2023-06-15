@@ -9,6 +9,14 @@
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="OpenFAST-Hybrid|Win32">
+      <Configuration>OpenFAST-Hybrid</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="OpenFAST-Hybrid|x64">
+      <Configuration>OpenFAST-Hybrid</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release_Hybrid|Win32">
       <Configuration>Release_Hybrid</Configuration>
       <Platform>Win32</Platform>
@@ -52,6 +60,13 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='OpenFAST-Hybrid|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Hybrid|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
@@ -60,6 +75,13 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='OpenFAST-Hybrid|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
@@ -85,10 +107,16 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='OpenFAST-Hybrid|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_Hybrid|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='OpenFAST-Hybrid|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_Hybrid|x64'" Label="PropertySheets">
@@ -116,6 +144,13 @@
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);..\..\modules\map\src</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='OpenFAST-Hybrid|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>..\..\build\bin\</OutDir>
+    <TargetName>MAP_$(PlatformName)</TargetName>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);..\..\modules\map\src</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Hybrid|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>..\..\build\bin\</OutDir>
@@ -131,12 +166,19 @@
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);..\..\modules\map\src</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='OpenFAST-Hybrid|x64'">
+    <TargetName>MAP_$(PlatformName)</TargetName>
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>..\..\build\bin\</OutDir>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);..\..\modules\map\src</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Hybrid|x64'">
     <TargetName>MAP_$(PlatformName)</TargetName>
     <LinkIncremental>false</LinkIncremental>
     <OutDir>..\..\build\bin\</OutDir>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);..\..\modules\map\src;C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2019.4.245\windows\mkl\include\intel64;C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2019.4.245\windows\mkl\include</IncludePath>
-    <LibraryPath>C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2019.4.245\windows\mkl\lib\intel64_win;C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2019.4.245\windows\mkl\lib;$(VC_LibraryPath_x86);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <LibraryPath>C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2019.4.245\windows\mkl\lib\intel64_win;C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2019.4.245\windows\mkl\lib;$(VC_LibraryPath_x86);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);C:\Program Files (x86)\Intel\oneAPI\mkl\2023.0.0\lib\intel64</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -185,6 +227,24 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='OpenFAST-Hybrid|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;MAP_DLL_EXPORTS;CMINPACK_NO_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalIncludeDirectories>..\..\modules\map\src</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_Hybrid|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -212,6 +272,23 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;MAP_DLL_EXPORTS;CMINPACK_NO_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='OpenFAST-Hybrid|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -302,18 +379,24 @@
   <ItemGroup>
     <CustomBuild Include="..\..\modules\map\src\MAP_Registry.txt">
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CALL ..\RunRegistry.bat MAP</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='OpenFAST-Hybrid|Win32'">CALL ..\RunRegistry.bat MAP</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release_Hybrid|Win32'">CALL ..\RunRegistry.bat MAP</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\modules\map\src\MAP_Types.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='OpenFAST-Hybrid|Win32'">..\..\modules\map\src\MAP_Types.h</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_Hybrid|Win32'">..\..\modules\map\src\MAP_Types.h</Outputs>
       <TreatOutputAsContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</TreatOutputAsContent>
+      <TreatOutputAsContent Condition="'$(Configuration)|$(Platform)'=='OpenFAST-Hybrid|Win32'">false</TreatOutputAsContent>
       <TreatOutputAsContent Condition="'$(Configuration)|$(Platform)'=='Release_Hybrid|Win32'">false</TreatOutputAsContent>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CALL ..\RunRegistry.bat MAP</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\..\modules\map\src\MAP_Types.h</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CALL ..\RunRegistry.bat MAP</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='OpenFAST-Hybrid|x64'">CALL ..\RunRegistry.bat MAP</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release_Hybrid|x64'">CALL ..\RunRegistry.bat MAP</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\..\modules\map\src\MAP_Types.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='OpenFAST-Hybrid|x64'">..\..\modules\map\src\MAP_Types.h</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release_Hybrid|x64'">..\..\modules\map\src\MAP_Types.h</Outputs>
       <TreatOutputAsContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</TreatOutputAsContent>
+      <TreatOutputAsContent Condition="'$(Configuration)|$(Platform)'=='OpenFAST-Hybrid|x64'">false</TreatOutputAsContent>
       <TreatOutputAsContent Condition="'$(Configuration)|$(Platform)'=='Release_Hybrid|x64'">false</TreatOutputAsContent>
       <TreatOutputAsContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</TreatOutputAsContent>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CALL ..\RunRegistry.bat MAP</Command>

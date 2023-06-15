@@ -27,10 +27,7 @@ Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "OpenFAST-Simulink", "..\Ope
 		{1A440C5B-CBA6-47D9-9CC2-C1CBA8C00BF9} = {1A440C5B-CBA6-47D9-9CC2-C1CBA8C00BF9}
 	EndProjectSection
 EndProject
-Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "OpenFAST-Simulink-hybrid", "..\OpenFAST-Simulink-hybrid\OpenFAST-Simulink-hybrid.vfproj", "{ABF4B929-12C2-48B2-87EB-9877068E4A1A}"
-	ProjectSection(ProjectDependencies) = postProject
-		{1A440C5B-CBA6-47D9-9CC2-C1CBA8C00BF9} = {1A440C5B-CBA6-47D9-9CC2-C1CBA8C00BF9}
-	EndProjectSection
+Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "FAST-Hybrid", "..\FAST-Hybrid\FAST-Hybrid.vfproj", "{C3041F06-0114-437F-941B-DF92346D0B14}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,6 +39,8 @@ Global
 		Debug|x64 = Debug|x64
 		Release_Double|Win32 = Release_Double|Win32
 		Release_Double|x64 = Release_Double|x64
+		Release_Hybrid(michael)|Win32 = Release_Hybrid(michael)|Win32
+		Release_Hybrid(michael)|x64 = Release_Hybrid(michael)|x64
 		Release_Hybrid|Win32 = Release_Hybrid|Win32
 		Release_Hybrid|x64 = Release_Hybrid|x64
 		Release_Matlab|Win32 = Release_Matlab|Win32
@@ -64,8 +63,12 @@ Global
 		{18AE8067-CCC6-4479-A0DB-C4089EF9FE71}.Release_Double|Win32.Build.0 = Release_Double|Win32
 		{18AE8067-CCC6-4479-A0DB-C4089EF9FE71}.Release_Double|x64.ActiveCfg = Release_Double|x64
 		{18AE8067-CCC6-4479-A0DB-C4089EF9FE71}.Release_Double|x64.Build.0 = Release_Double|x64
-		{18AE8067-CCC6-4479-A0DB-C4089EF9FE71}.Release_Hybrid|Win32.ActiveCfg = Release|Win32
-		{18AE8067-CCC6-4479-A0DB-C4089EF9FE71}.Release_Hybrid|x64.ActiveCfg = Release|x64
+		{18AE8067-CCC6-4479-A0DB-C4089EF9FE71}.Release_Hybrid(michael)|Win32.ActiveCfg = Release|Win32
+		{18AE8067-CCC6-4479-A0DB-C4089EF9FE71}.Release_Hybrid(michael)|x64.ActiveCfg = Release|x64
+		{18AE8067-CCC6-4479-A0DB-C4089EF9FE71}.Release_Hybrid|Win32.ActiveCfg = Release_Hybrid|Win32
+		{18AE8067-CCC6-4479-A0DB-C4089EF9FE71}.Release_Hybrid|Win32.Build.0 = Release_Hybrid|Win32
+		{18AE8067-CCC6-4479-A0DB-C4089EF9FE71}.Release_Hybrid|x64.ActiveCfg = Release_Hybrid|x64
+		{18AE8067-CCC6-4479-A0DB-C4089EF9FE71}.Release_Hybrid|x64.Build.0 = Release_Hybrid|x64
 		{18AE8067-CCC6-4479-A0DB-C4089EF9FE71}.Release_Matlab|Win32.ActiveCfg = Release|Win32
 		{18AE8067-CCC6-4479-A0DB-C4089EF9FE71}.Release_Matlab|x64.ActiveCfg = Release|x64
 		{18AE8067-CCC6-4479-A0DB-C4089EF9FE71}.Release|Win32.ActiveCfg = Release|Win32
@@ -88,6 +91,10 @@ Global
 		{1A440C5B-CBA6-47D9-9CC2-C1CBA8C00BF9}.Release_Double|Win32.Build.0 = Release_Double|Win32
 		{1A440C5B-CBA6-47D9-9CC2-C1CBA8C00BF9}.Release_Double|x64.ActiveCfg = Release_Double|x64
 		{1A440C5B-CBA6-47D9-9CC2-C1CBA8C00BF9}.Release_Double|x64.Build.0 = Release_Double|x64
+		{1A440C5B-CBA6-47D9-9CC2-C1CBA8C00BF9}.Release_Hybrid(michael)|Win32.ActiveCfg = Release_Hybrid|Win32
+		{1A440C5B-CBA6-47D9-9CC2-C1CBA8C00BF9}.Release_Hybrid(michael)|Win32.Build.0 = Release_Hybrid|Win32
+		{1A440C5B-CBA6-47D9-9CC2-C1CBA8C00BF9}.Release_Hybrid(michael)|x64.ActiveCfg = Release_Hybrid|x64
+		{1A440C5B-CBA6-47D9-9CC2-C1CBA8C00BF9}.Release_Hybrid(michael)|x64.Build.0 = Release_Hybrid|x64
 		{1A440C5B-CBA6-47D9-9CC2-C1CBA8C00BF9}.Release_Hybrid|Win32.ActiveCfg = Release_Hybrid|Win32
 		{1A440C5B-CBA6-47D9-9CC2-C1CBA8C00BF9}.Release_Hybrid|Win32.Build.0 = Release_Hybrid|Win32
 		{1A440C5B-CBA6-47D9-9CC2-C1CBA8C00BF9}.Release_Hybrid|x64.ActiveCfg = Release_Hybrid|x64
@@ -116,6 +123,10 @@ Global
 		{BF86702A-CB17-4050-8AE9-078CDC5910D3}.Release_Double|Win32.Build.0 = Release|Win32
 		{BF86702A-CB17-4050-8AE9-078CDC5910D3}.Release_Double|x64.ActiveCfg = Release|x64
 		{BF86702A-CB17-4050-8AE9-078CDC5910D3}.Release_Double|x64.Build.0 = Release|x64
+		{BF86702A-CB17-4050-8AE9-078CDC5910D3}.Release_Hybrid(michael)|Win32.ActiveCfg = Release_Hybrid|Win32
+		{BF86702A-CB17-4050-8AE9-078CDC5910D3}.Release_Hybrid(michael)|Win32.Build.0 = Release_Hybrid|Win32
+		{BF86702A-CB17-4050-8AE9-078CDC5910D3}.Release_Hybrid(michael)|x64.ActiveCfg = Release_Hybrid|x64
+		{BF86702A-CB17-4050-8AE9-078CDC5910D3}.Release_Hybrid(michael)|x64.Build.0 = Release_Hybrid|x64
 		{BF86702A-CB17-4050-8AE9-078CDC5910D3}.Release_Hybrid|Win32.ActiveCfg = Release_Hybrid|Win32
 		{BF86702A-CB17-4050-8AE9-078CDC5910D3}.Release_Hybrid|Win32.Build.0 = Release_Hybrid|Win32
 		{BF86702A-CB17-4050-8AE9-078CDC5910D3}.Release_Hybrid|x64.ActiveCfg = Release_Hybrid|x64
@@ -144,10 +155,14 @@ Global
 		{DA16A3A6-3297-4628-9E46-C6FA0E3C4D16}.Release_Double|Win32.Build.0 = Release|Win32
 		{DA16A3A6-3297-4628-9E46-C6FA0E3C4D16}.Release_Double|x64.ActiveCfg = Release|Win32
 		{DA16A3A6-3297-4628-9E46-C6FA0E3C4D16}.Release_Double|x64.Build.0 = Release|Win32
-		{DA16A3A6-3297-4628-9E46-C6FA0E3C4D16}.Release_Hybrid|Win32.ActiveCfg = Release|Win32
-		{DA16A3A6-3297-4628-9E46-C6FA0E3C4D16}.Release_Hybrid|Win32.Build.0 = Release|Win32
-		{DA16A3A6-3297-4628-9E46-C6FA0E3C4D16}.Release_Hybrid|x64.ActiveCfg = Release|Win32
-		{DA16A3A6-3297-4628-9E46-C6FA0E3C4D16}.Release_Hybrid|x64.Build.0 = Release|Win32
+		{DA16A3A6-3297-4628-9E46-C6FA0E3C4D16}.Release_Hybrid(michael)|Win32.ActiveCfg = Release|Win32
+		{DA16A3A6-3297-4628-9E46-C6FA0E3C4D16}.Release_Hybrid(michael)|Win32.Build.0 = Release|Win32
+		{DA16A3A6-3297-4628-9E46-C6FA0E3C4D16}.Release_Hybrid(michael)|x64.ActiveCfg = Release|Win32
+		{DA16A3A6-3297-4628-9E46-C6FA0E3C4D16}.Release_Hybrid(michael)|x64.Build.0 = Release|Win32
+		{DA16A3A6-3297-4628-9E46-C6FA0E3C4D16}.Release_Hybrid|Win32.ActiveCfg = Release_Hybrid|Win32
+		{DA16A3A6-3297-4628-9E46-C6FA0E3C4D16}.Release_Hybrid|Win32.Build.0 = Release_Hybrid|Win32
+		{DA16A3A6-3297-4628-9E46-C6FA0E3C4D16}.Release_Hybrid|x64.ActiveCfg = Release_Hybrid|x64
+		{DA16A3A6-3297-4628-9E46-C6FA0E3C4D16}.Release_Hybrid|x64.Build.0 = Release_Hybrid|x64
 		{DA16A3A6-3297-4628-9E46-C6FA0E3C4D16}.Release_Matlab|Win32.ActiveCfg = Release|Win32
 		{DA16A3A6-3297-4628-9E46-C6FA0E3C4D16}.Release_Matlab|Win32.Build.0 = Release|Win32
 		{DA16A3A6-3297-4628-9E46-C6FA0E3C4D16}.Release_Matlab|x64.ActiveCfg = Release|Win32
@@ -166,8 +181,10 @@ Global
 		{C3C93CC0-EDD7-438F-988C-1F917FAEFA67}.Debug|x64.ActiveCfg = Debug_Matlab|x64
 		{C3C93CC0-EDD7-438F-988C-1F917FAEFA67}.Release_Double|Win32.ActiveCfg = Release_Matlab|Win32
 		{C3C93CC0-EDD7-438F-988C-1F917FAEFA67}.Release_Double|x64.ActiveCfg = Release_Matlab|x64
-		{C3C93CC0-EDD7-438F-988C-1F917FAEFA67}.Release_Hybrid|Win32.ActiveCfg = Release_Matlab|Win32
-		{C3C93CC0-EDD7-438F-988C-1F917FAEFA67}.Release_Hybrid|x64.ActiveCfg = Release_Matlab|x64
+		{C3C93CC0-EDD7-438F-988C-1F917FAEFA67}.Release_Hybrid(michael)|Win32.ActiveCfg = Release_Matlab|Win32
+		{C3C93CC0-EDD7-438F-988C-1F917FAEFA67}.Release_Hybrid(michael)|x64.ActiveCfg = Release_Matlab|x64
+		{C3C93CC0-EDD7-438F-988C-1F917FAEFA67}.Release_Hybrid|Win32.ActiveCfg = Release_Hybrid|Win32
+		{C3C93CC0-EDD7-438F-988C-1F917FAEFA67}.Release_Hybrid|x64.ActiveCfg = Release_Hybrid|x64
 		{C3C93CC0-EDD7-438F-988C-1F917FAEFA67}.Release_Matlab|Win32.ActiveCfg = Release_Matlab|Win32
 		{C3C93CC0-EDD7-438F-988C-1F917FAEFA67}.Release_Matlab|Win32.Build.0 = Release_Matlab|Win32
 		{C3C93CC0-EDD7-438F-988C-1F917FAEFA67}.Release_Matlab|x64.ActiveCfg = Release_Matlab|x64
@@ -175,25 +192,25 @@ Global
 		{C3C93CC0-EDD7-438F-988C-1F917FAEFA67}.Release|Win32.ActiveCfg = Release_Matlab|Win32
 		{C3C93CC0-EDD7-438F-988C-1F917FAEFA67}.Release|x64.ActiveCfg = Release_Matlab|x64
 		{C3C93CC0-EDD7-438F-988C-1F917FAEFA67}.Release|x64.Build.0 = Release_Matlab|x64
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Debug_Double|Win32.ActiveCfg = Debug|Win32
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Debug_Double|Win32.Build.0 = Debug|Win32
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Debug_Double|x64.ActiveCfg = Debug|x64
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Debug_Matlab|Win32.ActiveCfg = Debug|Win32
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Debug_Matlab|Win32.Build.0 = Debug|Win32
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Debug_Matlab|x64.ActiveCfg = Debug|x64
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Debug|Win32.ActiveCfg = Debug|Win32
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Debug|Win32.Build.0 = Debug|Win32
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Debug|x64.ActiveCfg = Debug|Win32
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Release_Double|Win32.ActiveCfg = Release_Hybrid|Win32
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Release_Double|x64.ActiveCfg = Release_Hybrid|x64
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Release_Hybrid|Win32.ActiveCfg = Release_Hybrid|Win32
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Release_Hybrid|Win32.Build.0 = Release_Hybrid|Win32
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Release_Hybrid|x64.ActiveCfg = Release_Hybrid|x64
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Release_Hybrid|x64.Build.0 = Release_Hybrid|x64
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Release_Matlab|Win32.ActiveCfg = Release_Hybrid|Win32
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Release_Matlab|x64.ActiveCfg = Release_Hybrid|x64
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Release|Win32.ActiveCfg = Release_Hybrid|Win32
-		{ABF4B929-12C2-48B2-87EB-9877068E4A1A}.Release|x64.ActiveCfg = Release_Hybrid|x64
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Debug_Double|Win32.ActiveCfg = Debug_Double|Win32
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Debug_Double|x64.ActiveCfg = Debug_Double|x64
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Debug_Matlab|Win32.ActiveCfg = Debug_Double|Win32
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Debug_Matlab|Win32.Build.0 = Debug_Double|Win32
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Debug_Matlab|x64.ActiveCfg = Debug_Double|x64
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Debug|x64.ActiveCfg = Debug|x64
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Double|Win32.ActiveCfg = Release_Double|Win32
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Double|x64.ActiveCfg = Release_Double|x64
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Hybrid(michael)|Win32.ActiveCfg = Release_Double|Win32
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Hybrid(michael)|x64.ActiveCfg = Release_Double|x64
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Hybrid|Win32.ActiveCfg = Release_Hybrid|Win32
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Hybrid|Win32.Build.0 = Release_Hybrid|Win32
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Hybrid|x64.ActiveCfg = Release_Hybrid|x64
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Hybrid|x64.Build.0 = Release_Hybrid|x64
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Matlab|Win32.ActiveCfg = Release_Double|Win32
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Matlab|x64.ActiveCfg = Release_Double|x64
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Release|Win32.ActiveCfg = Release|Win32
+		{C3041F06-0114-437F-941B-DF92346D0B14}.Release|x64.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

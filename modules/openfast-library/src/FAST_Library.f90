@@ -92,12 +92,12 @@ subroutine FAST_Sizes(iTurb, TMax, InitInpAry, InputFileName_c, AbortErrLev_c, N
    INTEGER(C_INT),         INTENT(IN   ) :: iTurb            ! Turbine number 
    REAL(C_DOUBLE),         INTENT(IN   ) :: TMax      
    REAL(C_DOUBLE),         INTENT(IN   ) :: InitInpAry(MAXInitINPUTS)      
-   CHARACTER(KIND=C_CHAR), INTENT(IN   ) :: InputFileName_c(IntfStrLen)      
-   INTEGER(C_INT),         INTENT(  OUT) :: AbortErrLev_c      
-   INTEGER(C_INT),         INTENT(  OUT) :: NumOuts_c      
-   REAL(C_DOUBLE),         INTENT(  OUT) :: dt_c      
-   INTEGER(C_INT),         INTENT(  OUT) :: ErrStat_c      
-   CHARACTER(KIND=C_CHAR), INTENT(  OUT) :: ErrMsg_c(IntfStrLen) 
+   CHARACTER(KIND=C_CHAR), INTENT(IN   ) :: InputFileName_c(IntfStrLen) 
+   INTEGER(C_INT),         INTENT(  OUT) :: AbortErrLev_c
+   INTEGER(C_INT),         INTENT(  OUT) :: NumOuts_c
+   REAL(C_DOUBLE),         INTENT(  OUT) :: dt_c 
+   INTEGER(C_INT),         INTENT(  OUT) :: ErrStat_c
+   CHARACTER(KIND=C_CHAR), INTENT(  OUT) :: ErrMsg_c(IntfStrLen)
    CHARACTER(KIND=C_CHAR), INTENT(  OUT) :: ChannelNames_c(ChanLen*MAXOUTPUTS+1)
    
    ! local
