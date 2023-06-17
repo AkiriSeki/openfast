@@ -20,7 +20,7 @@
 ! limitations under the License.
 !
 !**********************************************************************************************************************************
-PROGRAM FAST_Hybrid
+PROGRAM FAST
 ! This program models 2- or 3-bladed turbines of a standard configuration.
 !
 ! noted compilation switches:
@@ -53,6 +53,38 @@ CHARACTER(1024)                       :: CheckpointRoot                         
 CHARACTER(20)                         :: FlagArg                                 ! flag argument from command line
 INTEGER(IntKi)                        :: Restart_step                            ! step to start on (for restart) 
 
+! Variable
+INTEGER :: NumInputs_c = 12   
+
+! local variables (Modify syntax llater, be consistentn with what it does),
+integer*4 dataSize
+parameter (dataSize = 256)
+      
+!integer*4 numSockIDs
+!parameter (numSockIDs = 32)
+      
+integer*4 sizeInt, sizeDouble
+parameter (sizeInt = 4, sizeDouble = 8)
+      
+integer*4 :: port = 8090
+integer*4 sizeMachineInet
+!integer*4 socketIDs(numSockIDs)
+integer*4 socketID
+common    //socketID ! AS: check this
+integer*4 stat
+      
+integer*4 iData(11)
+real*8    sData(dataSize)
+real*8    rData(dataSize)
+!real*8    timePast
+      
+!save socketIDs
+!save timePast
+      
+!data socketIDs /numSockIDs*0/
+!data timePast /0.0/
+      
+      
       !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       ! determine if this is a restart from checkpoint
       !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -128,7 +160,10 @@ INTEGER(IntKi)                        :: Restart_step                           
       
       ! this takes data from n_t_global and gets values at n_t_global + 1
       DO i_turb = 1,NumTurbines
-        ! Received motion by setExternal... <- check if we can use it receive from OpenFresco Akiri  
+        ! ##########################################################################################
+        ! Received motion by setExternal... <- check if we can use it receive from OpenFresco Akiri 
+        ! ##########################################################################################
+         CALL FAST_SetExternalInputs_Hybrid(i_turb, NumInputs_c, Turbine(i_turb)%m_FAST)
          CALL FAST_Solution_T( t_initial, n_t_global, Turbine(i_turb), ErrStat, ErrMsg )
             CALL CheckError( ErrStat, ErrMsg  )
                                    
@@ -137,8 +172,10 @@ INTEGER(IntKi)                        :: Restart_step                           
             ! put this at the end of the loop so that we can output linearization analysis at last OP if desired
          CALL FAST_Linearize_T(t_initial, n_t_global+1, Turbine(i_turb), ErrStat, ErrMsg)
             CALL CheckError( ErrStat, ErrMsg  )
+        ! ##########################################################################################
         ! FillOutputAray_T() + socket communication = implement local newSubroutine
-        
+        ! ##########################################################################################
+        CALL FillOutputAry_T_Hybrid(Turbine(i_turb))
       END DO
 
       
@@ -189,30 +226,202 @@ CONTAINS
       END IF
 
 
-   END SUBROUTINE CheckError   
+   END SUBROUTINE CheckError
+   
+   
+   ! subroutine FillOutputAray_Hybrid   
+
+!----------------------------------------------------------------------------------------------------------------------------------
+!> Routine that calls FillOutputAry for one instance of a Turbine data structure. This is a separate subroutine so that the FAST
+!! driver programs do not need to change or operate on the individual module level. (Called from Simulink interface.) 
+    SUBROUTINE FillOutputAry_T_Hybrid(Turbine)
+                   
+       TYPE(FAST_TurbineType),   INTENT(IN   ) :: Turbine                          !< all data for one instance of a turbine
+       REAL(ReKi),               INTENT(  OUT) :: Outputs(:)                       !< single array of output 
+   
+         ! 1. Call FillOutputAray to get whole output array at t=n+1
+          CALL FillOutputAry(Turbine%p_FAST, Turbine%y_FAST, Turbine%IfW%y%WriteOutput, Turbine%OpFM%y%WriteOutput, &
+                    Turbine%ED%Output(1)%WriteOutput, Turbine%AD%y%WriteOutput, Turbine%SrvD%y%WriteOutput, &
+                    Turbine%HD%y%WriteOutput, Turbine%SD%y%WriteOutput, Turbine%ExtPtfm%y%WriteOutput, Turbine%MAP%y%WriteOutput, &
+                    Turbine%FEAM%y%WriteOutput, Turbine%MD%y%WriteOutput, Turbine%Orca%y%WriteOutput, &
+                    Turbine%IceF%y%WriteOutput, Turbine%IceD%y, Turbine%BD%y, Outputs)
+    
+        ! 2. Extract Aerodynamic Force inside this subroutine <- doen in Step 3 
+    
+          !3. Commit states variables
+          !              commit state <- Now we know time advances, so comment it out
+              ! if (time(iTotalTime) .gt. timePast) then
+                  sData(1) = 5
+                  call senddata(socketID, sizeDouble,&
+                               sData, dataSize, stat)
+                  ! timePast = time(iTotalTime)
+              ! endif
+        ! 4. Send the extracted array to OpenFresco through socket communicaiton.
+                   !              send trial response to experimental element
+          
+          
+               sData(1) = 3
+               do i = 1, 6 ! Loop through 1 to 6 (force)
+                  sData(1+i) = Outputs(FirstIdx_AeroDyn+i) ! A replace 20 with the first index of Aero DYna 
+                  !sData(1+ndofel+i) = v(kblock,i)
+                  !sData(1+2*ndofel+i) = a(kblock,i)
+               enddo
+               sData(1+1*6+1) = time(t_n_global)!iTotalTime)
+               
+               call senddata(socketID, sizeDouble,&
+                            sData, dataSize, stat)
+                        
+        END SUBROUTINE FillOutputAry_T
+    
+
+    ! subroutine FAST_SetExternalInputs_Hybrid()
+    ! 1. Recieve motion from socket (OpenFresco) passit to InputAry
+    ! 2. m_FAST%ExternInput%PtfmSurge    = InputAry(1) <- fill in the m_FAST
+    ! e.g.
+     !        m_FAST%ExternInput%PtfmSurge    = InputAry(1)
+     !        m_FAST%ExternInput%PtfmSway     = InputAry(2)
+     !        m_FAST%ExternInput%PtfmHeave    = InputAry(3)
+     !        m_FAST%ExternInput%PtfmRoll     = InputAry(4)
+     !        m_FAST%ExternInput%PtfmPitch    = InputAry(5)
+     !        m_FAST%ExternInput%PtfmYaw      = InputAry(6)
+     !        m_FAST%ExternInput%PtfmSurgeVel = InputAry(7)
+     !        m_FAST%ExternInput%PtfmSwayVel  = InputAry(8)
+     !        m_FAST%ExternInput%PtfmHeaveVel = InputAry(9)
+     !        m_FAST%ExternInput%PtfmRollVel  = InputAry(10)
+     !        m_FAST%ExternInput%PtfmPitchVel = InputAry(11)
+     !        m_FAST%ExternInput%PtfmYawVel   = InputAry(12)
+    subroutine FAST_SetExternalInputs_Hybrid(iTurb, NumInputs_c, m_FAST)
+
+       USE, INTRINSIC :: ISO_C_Binding
+       USE FAST_Types
+    !   USE FAST_Data, only: NumFixedInputs
+   
+       IMPLICIT  NONE
+
+       INTEGER(C_INT),         INTENT(IN   ) :: iTurb            ! Turbine number 
+       INTEGER(C_INT),         INTENT(IN   ) :: NumInputs_c      ! May 
+       REAL(C_DOUBLE),         INTENT(IN   ) :: InputAry(NumInputs_c)                   ! Inputs from Simulink
+       TYPE(FAST_MiscVarType), INTENT(INOUT) :: m_FAST                                  ! Miscellaneous variables
+   
+       INTEGER  :: num_twr_nodes
+       INTEGER  :: j, k
+   
+             ! set the inputs from external code here...
+             ! transfer inputs from Simulink to FAST
+          IF ( NumInputs_c < NumFixedInputs ) RETURN ! This is an error
+      
+      
+           !extract socketID
+    !     (jtype = user-defined integer value n in element type VUn)
+         ! if (jtype .le. numSockIDs) then
+         !    socketID = socketIDs(jtype)
+         ! else
+         !    write(*,*) 'ERROR - Only ',numSockIDs,' genericClient_exp ',
+         !*              'elements supported: consider increasing ',
+         !*              'numSockIDs parameter in genericClient_exp.for'
+         !    call xplb_exit
+         ! endif
+      
+    !     setup connection with SimAppSiteServer
+          !if (socketID .eq. 0 .and. time(iTotalTime) .gt. 0.0) then
+           if (socketID .eq. 0 .and. n_t_global .gt. 0.0) then
+          
+             !port = 8090
+             sizeMachineInet = 9+1
+             call setupconnectionclient(port, &
+                                       '127.0.0.1'//char(0), &
+                                       sizeMachineInet, &
+                                       socketID)
+             if (socketID .le. 0) then
+                write(*,*) 'ERROR - failed to setup connection'
+             !   call xplb_exit AS:terminate
+             endif
+             ! socketIDs(jtype) = socketID: AS: not saveing
+         
+    !       set the data size for the experimental site
+    !        sizeCtrl(disp)
+             iData(1)  = 0! ndofel
+    !        sizeCtrl(vel)
+             iData(2)  = 0!ndofel
+    !        sizeCtrl(accel)
+             iData(3)  = 0!ndofel
+    !        sizeCtrl(force)
+             iData(4)  = 6
+    !        sizeCtrl(time)
+             iData(5)  = 1
+    !        sizeDaq(disp)
+             iData(6)  = 6
+    !        sizeDaq(vel)
+             iData(7)  = 6
+    !        sizeDaq(accel)
+             iData(8)  = 0
+    !        sizeDaq(force)
+             iData(9)  = 0! ndofel
+    !        sizeDaq(time)
+             iData(10) = 1
+    !        dataSize
+             iData(11) = dataSize
+         
+             call senddata(socketID, sizeInt, &
+                           iData, 11, stat)
+           endif
+      
+           ! Receive measured motion from OpenFRESCO
+               sData(1) = 6
+               call senddata(socketID, sizeDouble,&
+                            sData, dataSize, stat)
+               
+               call recvdata(socketID, sizeDouble,&
+                            rData, dataSize, stat)
+               
+               do i = 1, 12! getting motions
+                  InputAry(i) = rData(i)
+               enddo
+
+
+     
+          IF ( NumInputs_c == NumFixedInputs ) THEN  ! Default for hybrid model use: ElastoDyn inputs
+              ! Replace InputAry with rData
+             m_FAST%ExternInput%PtfmSurge    = InputAry(1)
+             m_FAST%ExternInput%PtfmSway     = InputAry(2)
+             m_FAST%ExternInput%PtfmHeave    = InputAry(3)
+             m_FAST%ExternInput%PtfmRoll     = InputAry(4)
+             m_FAST%ExternInput%PtfmPitch    = InputAry(5)
+             m_FAST%ExternInput%PtfmYaw      = InputAry(6)
+             m_FAST%ExternInput%PtfmSurgeVel = InputAry(7)
+             m_FAST%ExternInput%PtfmSwayVel  = InputAry(8)
+             m_FAST%ExternInput%PtfmHeaveVel = InputAry(9)
+             m_FAST%ExternInput%PtfmRollVel  = InputAry(10)
+             m_FAST%ExternInput%PtfmPitchVel = InputAry(11)
+             m_FAST%ExternInput%PtfmYawVel   = InputAry(12)
+          ENDIF
+            
+          ! Probably dont need, but check it
+             ! Some other modular configuration is being used for Simulink (@mcd: these functions comprised the traditional use of Simulink with OpenFAST)
+          IF ( NumInputs_c > NumFixedInputs ) THEN
+             IF ( NumInputs_c == NumFixedInputs + 8 ) THEN  ! ED + SrvD inputs, no IfW inputs
+                 m_FAST%ExternInput%GenTrq      = InputAry(13)
+                 m_FAST%ExternInput%ElecPwr     = InputAry(14)
+                 m_FAST%ExternInput%YawPosCom   = InputAry(15)
+                 m_FAST%ExternInput%YawRateCom  = InputAry(16)
+                 m_FAST%ExternInput%BlPitchCom  = InputAry(17:19)
+                 m_FAST%ExternInput%HSSBrFrac   = InputAry(20)  
+             ELSEIF ( Numinputs_c == NumFixedInputs + 11 ) THEN  ! SrvD + IfW + ED inputs
+                 m_FAST%ExternInput%GenTrq      = InputAry(13)
+                 m_FAST%ExternInput%ElecPwr     = InputAry(14)
+                 m_FAST%ExternInput%YawPosCom   = InputAry(15)
+                 m_FAST%ExternInput%YawRateCom  = InputAry(16)
+                 m_FAST%ExternInput%BlPitchCom  = InputAry(17:19)
+                 m_FAST%ExternInput%HSSBrFrac   = InputAry(20)  
+                 m_FAST%ExternInput%LidarFocus  = InputAry(21:23)
+             ENDIF
+          ENDIF
+      
+    end subroutine FAST_SetExternalInputs
+   
+   
    !...............................................................................................................................
     END PROGRAM FAST
 !=======================================================================
 
     
-! subroutine FillOutputAray_Hybrid    
-! 1. Call FillOutputAray_T to get whole output array at t=n+1
-! 2. Extract Aerodynamic Force inside this subroutine
-! 3. Send the extracted array to OpenFresco through socket communicaiton.
-
-! subroutine FAST_SetExternalInputs_Hybrid()
-! 1. Recieve motion from socket (OpenFresco) passit to InputAry
-! 2. m_FAST%ExternInput%PtfmSurge    = InputAry(1) <- fill in the m_FAST
-! e.g.
- !        m_FAST%ExternInput%PtfmSurge    = InputAry(1)
- !        m_FAST%ExternInput%PtfmSway     = InputAry(2)
- !        m_FAST%ExternInput%PtfmHeave    = InputAry(3)
- !        m_FAST%ExternInput%PtfmRoll     = InputAry(4)
- !        m_FAST%ExternInput%PtfmPitch    = InputAry(5)
- !        m_FAST%ExternInput%PtfmYaw      = InputAry(6)
- !        m_FAST%ExternInput%PtfmSurgeVel = InputAry(7)
- !        m_FAST%ExternInput%PtfmSwayVel  = InputAry(8)
- !        m_FAST%ExternInput%PtfmHeaveVel = InputAry(9)
- !        m_FAST%ExternInput%PtfmRollVel  = InputAry(10)
- !        m_FAST%ExternInput%PtfmPitchVel = InputAry(11)
- !        m_FAST%ExternInput%PtfmYawVel   = InputAry(12)
