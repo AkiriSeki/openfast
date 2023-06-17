@@ -34,7 +34,10 @@ __pycache__/*
 build*/
 _build*/
 install/
-vs-build/
+x64/
+Release/
+Release_Matlab/
+Release_Hybrid
 
 # OS and IDE specific files
 .DS_Store
@@ -44,3 +47,12 @@ vs-build/
 
 # backup files
 *.asv
+
+# log files
+*.htm
+
+# project
+*.u2d
+*.user
+*.vs/
+*.filters
