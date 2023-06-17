@@ -91,12 +91,12 @@
 			<FileConfiguration Name="OpenFAST-Hybrid|x64" ExcludedFromBuild="true"/>
 			<FileConfiguration Name="OpenFAST-Hybrid|Win32" ExcludedFromBuild="true"/>
 			<FileConfiguration Name="Debug_Matlab|x64" ExcludedFromBuild="true"/>
-			<FileConfiguration Name="Debug_Matlab|Win32" ExcludedFromBuild="true"/>
 			<FileConfiguration Name="Release_Matlab|x64" ExcludedFromBuild="true"/>
+			<FileConfiguration Name="Debug_Matlab|Win32" ExcludedFromBuild="true"/>
 			<FileConfiguration Name="Release_Hybrid|x64" ExcludedFromBuild="true"/>
-			<FileConfiguration Name="Release_Matlab|Win32" ExcludedFromBuild="true"/></File>
-		<File RelativePath="..\..\glue-codes\simulink\src\FAST_SFunc.c"/></Filter>
+			<FileConfiguration Name="Release_Matlab|Win32" ExcludedFromBuild="true"/></File></Filter>
 		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
-		<File RelativePath="..\..\modules\openfast-library\src\FAST_Library.f90"/></Filter></Files>
+		<File RelativePath="..\..\modules\openfast-library\src\FAST_Library.f90"/>
+		<File RelativePath="..\..\glue-codes\simulink\src\FAST_SFunc.c"/></Filter></Files>
 	<Globals/></VisualStudioProject>
