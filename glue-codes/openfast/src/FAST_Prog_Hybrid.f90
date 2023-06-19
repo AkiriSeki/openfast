@@ -35,11 +35,11 @@ USE FAST_Subs   ! all of the ModuleName and ModuleName_types modules are inherit
                        
 IMPLICIT  NONE
    
-   ! Local parameters:
+! Local parameters:
 REAL(DbKi),             PARAMETER     :: t_initial = 0.0_DbKi                    ! Initial time
 INTEGER(IntKi),         PARAMETER     :: NumTurbines = 1
    
-   ! Other/Misc variables
+! Other/Misc variables
 TYPE(FAST_TurbineType)                :: Turbine(NumTurbines)                    ! Data for each turbine instance
 
 INTEGER(IntKi)                        :: i_turb                                  ! current turbine number
@@ -47,40 +47,48 @@ INTEGER(IntKi)                        :: n_t_global                             
 INTEGER(IntKi)                        :: ErrStat                                 ! Error status
 CHARACTER(1024)                       :: ErrMsg                                  ! Error message
 
-   ! data for restart:
+! data for restart:
 CHARACTER(1000)                       :: InputFile                               ! String to hold the intput file name
 CHARACTER(1024)                       :: CheckpointRoot                          ! Rootname of the checkpoint file
 CHARACTER(20)                         :: FlagArg                                 ! flag argument from command line
 INTEGER(IntKi)                        :: Restart_step                            ! step to start on (for restart) 
 
+! Added variables by AS
 ! Variable
-INTEGER :: NumInputs_c = 12   
+INTEGER,                PARAMETER     :: NumInputs_c = 12                        ! Number of Inputs from OpenFresco (This may be removed in the future)
 
 ! local variables (Modify syntax llater, be consistentn with what it does),
-integer*4 dataSize
-parameter (dataSize = 256)
+INTEGER,                PARAMETER      :: dataSize = 256                        ! maximum data size sent to/from OpenFresco
+! Currently, assuming only one socket communication so belowe is commented out
+!INTEGER,                PARAMETER      :: numSockIDs = 32                       ! maximum number of sockect communication)
+          
+INTEGER,                PARAMETER      :: sizeInt = 4
+INTEGER,                PARAMETER      :: sizeDouble = 8
+
+INTEGER,                PARAMETER      :: port = 8090
+INTEGER,                               :: sizeMachineInet
+
+! Currently, assuming only one socket communication so below is commented out
+!INTEGER(numSocketIDs)                  :: socketIDs                             ! container of socketIDs
+
+! In fortran 90, to my understanding, decalaring variable in PROGRAM makes the variable global variable. Fortran 77 does not, so it need common.
+INTEGER                                :: socketID
+! Below is fortran 77 format
+!integer*4 socketID
+! common    //socketID ! AS: check this
+
+INTEGER                                 :: stat                                  ! status for error
       
-!integer*4 numSockIDs
-!parameter (numSockIDs = 32)
-      
-integer*4 sizeInt, sizeDouble
-parameter (sizeInt = 4, sizeDouble = 8)
-      
-integer*4 :: port = 8090
-integer*4 sizeMachineInet
-!integer*4 socketIDs(numSockIDs)
-integer*4 socketID
-common    //socketID ! AS: check this
-integer*4 stat
-      
-integer*4 iData(11)
-real*8    sData(dataSize)
-real*8    rData(dataSize)
-!real*8    timePast
-      
+INTEGER(11)                             :: iData                                 ! Array of Integer, store number of DOF of receiving/sending sinals
+REAL(dataSize)                          :: sData                                 ! Array of sending (command) signal
+REAL(dataSize)                          :: rData                                 ! Array of receiving (feedback) signal
+! Currently, there is no iteration between FAST_SetExternalInputs_Hybrid() and FAST_SetExternalInputs_Hybrid()
+! So, if no need to check if time advances or not.
+! REAL                                    :: timePast                              ! to cmopared current time step and previsou time step
+
+! Below is not used for this progeam, will be cleaned up later.
 !save socketIDs
 !save timePast
-      
 !data socketIDs /numSockIDs*0/
 !data timePast /0.0/
       
@@ -247,31 +255,29 @@ CONTAINS
                     Turbine%IceF%y%WriteOutput, Turbine%IceD%y, Turbine%BD%y, Outputs)
     
         ! 2. Extract Aerodynamic Force inside this subroutine <- doen in Step 3 
+          
     
-          !3. Commit states variables
-          !              commit state <- Now we know time advances, so comment it out
-              ! if (time(iTotalTime) .gt. timePast) then
-                  sData(1) = 5
-                  call senddata(socketID, sizeDouble,&
-                               sData, dataSize, stat)
-                  ! timePast = time(iTotalTime)
-              ! endif
+        !3. Commit states variables
+        ! commit state <- Now we know time advances, so comment it out
+        ! if (time(iTotalTime) .gt. timePast) then
+        sData(1) = 5
+        CALL senddata(socketID, sizeDouble,&
+                      sData, dataSize, stat)
+        ! timePast = time(iTotalTime)
+        ! endif
         ! 4. Send the extracted array to OpenFresco through socket communicaiton.
-                   !              send trial response to experimental element
-          
-          
-               sData(1) = 3
-               do i = 1, 6 ! Loop through 1 to 6 (force)
-                  sData(1+i) = Outputs(FirstIdx_AeroDyn+i) ! A replace 20 with the first index of Aero DYna 
-                  !sData(1+ndofel+i) = v(kblock,i)
-                  !sData(1+2*ndofel+i) = a(kblock,i)
-               enddo
-               sData(1+1*6+1) = time(t_n_global)!iTotalTime)
-               
-               call senddata(socketID, sizeDouble,&
-                            sData, dataSize, stat)
+        ! send trial response to experimental element
+        sData(1) = 3
+        DO i = 1, 6 ! Loop through 1 to 6 (force)
+            sData(1+i) = Outputs(FirstIdx_AeroDyn+i) ! CHECK the index of AeroDyn output size of 81 
+            !sData(1+ndofel+i) = v(kblock,i)
+            !sData(1+2*ndofel+i) = a(kblock,i)
+        ENDDO
+             sData(1+1*6+1) = time(t_n_global)
+             CALL senddata(socketID, sizeDouble,&
+                           sData, dataSize, stat)
                         
-        END SUBROUTINE FillOutputAry_T
+    END SUBROUTINE FillOutputAry_T
     
 
     ! subroutine FAST_SetExternalInputs_Hybrid()
@@ -290,7 +296,8 @@ CONTAINS
      !        m_FAST%ExternInput%PtfmRollVel  = InputAry(10)
      !        m_FAST%ExternInput%PtfmPitchVel = InputAry(11)
      !        m_FAST%ExternInput%PtfmYawVel   = InputAry(12)
-    subroutine FAST_SetExternalInputs_Hybrid(iTurb, NumInputs_c, m_FAST)
+    
+    SUBROUTINE FAST_SetExternalInputs_Hybrid(iTurb, NumInputs_c, m_FAST)
 
        USE, INTRINSIC :: ISO_C_Binding
        USE FAST_Types
@@ -324,27 +331,27 @@ CONTAINS
       
     !     setup connection with SimAppSiteServer
           !if (socketID .eq. 0 .and. time(iTotalTime) .gt. 0.0) then
-           if (socketID .eq. 0 .and. n_t_global .gt. 0.0) then
+           IF (socketID .eq. 0 .and. n_t_global .gt. 0.0) THEN
           
              !port = 8090
              sizeMachineInet = 9+1
-             call setupconnectionclient(port, &
+             CALL setupconnectionclient(port, &
                                        '127.0.0.1'//char(0), &
                                        sizeMachineInet, &
                                        socketID)
-             if (socketID .le. 0) then
-                write(*,*) 'ERROR - failed to setup connection'
+            IF (socketID .le. 0) THEN
+                WRITE(*,*) 'ERROR - failed to setup connection'
              !   call xplb_exit AS:terminate
-             endif
+            ENDIF
              ! socketIDs(jtype) = socketID: AS: not saveing
          
     !       set the data size for the experimental site
     !        sizeCtrl(disp)
-             iData(1)  = 0! ndofel
+             iData(1)  = 0
     !        sizeCtrl(vel)
-             iData(2)  = 0!ndofel
+             iData(2)  = 0
     !        sizeCtrl(accel)
-             iData(3)  = 0!ndofel
+             iData(3)  = 0
     !        sizeCtrl(force)
              iData(4)  = 6
     !        sizeCtrl(time)
@@ -362,19 +369,19 @@ CONTAINS
     !        dataSize
              iData(11) = dataSize
          
-             call senddata(socketID, sizeInt, &
+             CALL senddata(socketID, sizeInt, &
                            iData, 11, stat)
-           endif
+           ENDIF
       
            ! Receive measured motion from OpenFRESCO
                sData(1) = 6
-               call senddata(socketID, sizeDouble,&
+               CALL senddata(socketID, sizeDouble,&
                             sData, dataSize, stat)
                
-               call recvdata(socketID, sizeDouble,&
+               CALL recvdata(socketID, sizeDouble,&
                             rData, dataSize, stat)
                
-               do i = 1, 12! getting motions
+               DO i = 1, 12! getting motions
                   InputAry(i) = rData(i)
                enddo
 
