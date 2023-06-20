@@ -230,10 +230,11 @@ CONTAINS
    
         IMPLICIT  NONE
 
-        INTEGER(C_INT),         INTENT(IN   ) :: iTurb                  ! Turbine number 
-        INTEGER(C_INT),         INTENT(IN   ) :: NumInputs_c            ! May 
-        REAL(C_DOUBLE),         INTENT(IN   ) :: InputAry(NumInputs_c)  ! Number of inputs array from OpenFresco
-        TYPE(FAST_MiscVarType), INTENT(INOUT) :: m_FAST                 ! Miscellaneous variables
+        INTEGER(C_INT),         INTENT(IN   )           :: iTurb                  ! Turbine number 
+        INTEGER(C_INT),         INTENT(IN   )           :: NumInputs_c            ! May 
+        !REAL(C_DOUBLE),         INTENT(IN   )           :: InputAry(NumInputs_c)  ! Inputs array from OpenFresco
+        REAL,                   DIMENSION(NumInputs_c)  :: InputAry     ! Input array from OpenFresco
+        TYPE(FAST_MiscVarType), INTENT(INOUT)           :: m_FAST                 ! Miscellaneous variables
    
         INTEGER  :: num_twr_nodes
         INTEGER  :: i
@@ -393,7 +394,8 @@ CONTAINS
         DO i = 1, 6
             sData(1+i) = Outputs(First_idx_AeroDyn + i) ! Fill from sData(2) to (7) with RtAeroFxh, RtAeroFyh, RtAeroFzh, RtAeroMxh, RtAeroMyh, and RtAeroMzh.
         ENDDO
-        sData(1+1*6+1) = time(n_t_global)               ! Fill sData(8) with current time
+        !sData(1+1*6+1) = time(n_t_global)               ! Fill sData(8) with current time
+        sData(1+1*6+1) = n_t_global                     ! Fill sData(8) with current time
         CALL senddata(socketID, sizeDouble,&
                       sData, dataSize, stat)
                         
