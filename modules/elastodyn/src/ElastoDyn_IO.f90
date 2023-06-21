@@ -28,7 +28,7 @@ MODULE ElastoDyn_Parameters
 
    TYPE(ProgDesc), PARAMETER  :: ED_Ver = ProgDesc( 'ElastoDyn', '', '' )
 
-! SOmething wrong with COMPILE_SIMULINK definition of preprocessor
+! Something wrong with COMPILE_SIMULINK definition of preprocessor
 !#ifdef COMPILE_SIMULINK
    LOGICAL, PARAMETER, PUBLIC           :: Cmpl4SFun  = .TRUE.                            ! Is the module being compiled as an S-Function for Simulink?
 !#else
