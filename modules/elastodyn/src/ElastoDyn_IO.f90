@@ -27,12 +27,13 @@ MODULE ElastoDyn_Parameters
    USE NWTC_Library
 
    TYPE(ProgDesc), PARAMETER  :: ED_Ver = ProgDesc( 'ElastoDyn', '', '' )
-   
-#ifdef COMPILE_SIMULINK
+
+! SOmething wrong with COMPILE_SIMULINK definition of preprocessor
+!#ifdef COMPILE_SIMULINK
    LOGICAL, PARAMETER, PUBLIC           :: Cmpl4SFun  = .TRUE.                            ! Is the module being compiled as an S-Function for Simulink?
-#else
-   LOGICAL, PARAMETER, PUBLIC           :: Cmpl4SFun  = .FALSE.                           ! Is the module being compiled as an S-Function for Simulink?
-#endif
+!#else
+   !LOGICAL, PARAMETER, PUBLIC           :: Cmpl4SFun  = .FALSE.                           ! Is the module being compiled as an S-Function for Simulink?
+!#endif
 
    REAL(ReKi), PARAMETER      :: SmallAngleLimit_Deg  =  15.0                     ! Largest input angle considered "small" (used as a check on input data), degrees
 
