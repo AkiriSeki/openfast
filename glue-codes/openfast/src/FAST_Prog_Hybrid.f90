@@ -71,12 +71,13 @@ INTEGER                                :: socketID
 !integer*4 socketID
 ! common    //socketID ! AS: check this
 INTEGER                                 :: stat                                  ! status for error
-INTEGER,                DIMENSION(11)       :: iData                                 ! Array of Integer, store number of DOF of receiving/sending sinals
-REAL,                   DIMENSION(dataSize) :: sData                                 ! Array of sending (command) signal
-REAL,                   DIMENSION(dataSize) :: rData                                 ! Array of receiving (feedback) signal
+INTEGER,                DIMENSION(11)       :: iData                             ! Array of Integer, store number of DOF of receiving/sending sinals
+! Something wrong with this
+REAL(8),                   DIMENSION(dataSize) :: sData                             ! Array of sending (command) signal
+REAL(8),                   DIMENSION(dataSize) :: rData                             ! Array of receiving (feedback) signal
 ! Currently, there is no iteration between FAST_SetExternalInputs_Hybrid() and FAST_SetExternalInputs_Hybrid()
 ! So, if no need to check if time advances or not.
-! REAL                                    :: timePast                              ! to cmopared current time step and previsou time step
+! REAL                                    :: timePast                            ! to cmopared current time step and previsou time step
 
 ! Below is not used for this progeam, will be cleaned up later.
 !save socketIDs
@@ -233,7 +234,7 @@ CONTAINS
         INTEGER(C_INT),         INTENT(IN   )           :: iTurb                  ! Turbine number 
         INTEGER(C_INT),         INTENT(IN   )           :: NumInputs_c            ! May 
         !REAL(C_DOUBLE),         INTENT(IN   )           :: InputAry(NumInputs_c)  ! Inputs array from OpenFresco
-        REAL,                   DIMENSION(NumInputs_c)  :: InputAry     ! Input array from OpenFresco
+        !REAL,                   DIMENSION(NumInputs_c)  :: InputAry     ! Input array from OpenFresco
         TYPE(FAST_MiscVarType), INTENT(INOUT)           :: m_FAST                 ! Miscellaneous variables
    
         INTEGER  :: num_twr_nodes
@@ -257,15 +258,17 @@ CONTAINS
       
         ! setup connection with SimAppSiteServer
         ! if (socketID .eq. 0 .and. time(iTotalTime) .gt. 0.0) then
-        IF (socketID .eq. 0 .and. n_t_global .gt. 0.0) THEN
-          
+        !IF (socketID .eq. 0 .and. n_t_global .gt. 0.0) THEN
+        IF (socketID .eq. 0) THEN
+            !WRITE(*,*) 'before settingupconnection'
             sizeMachineInet = 9+1
             CALL setupconnectionclient(port, &
                                        '127.0.0.1'//char(0), &
                                        sizeMachineInet, &
                                        socketID)
+            !WRITE(*,*) 'after settingupconnection'
             IF (socketID .le. 0) THEN
-                WRITE(*,*) 'ERROR - failed to setup connection'
+                !WRITE(*,*) 'ERROR - failed to setup connection'
              !   call xplb_exit AS:terminate
             ENDIF
              ! socketIDs(jtype) = socketID: AS: not saveing
@@ -293,62 +296,70 @@ CONTAINS
             iData(10) = 1
             ! dataSize
             iData(11) = dataSize
-         
+            !WRITE(*,*) 'before senddata: iData'
             CALL senddata(socketID, sizeInt, &
                           iData, 11, stat)
-            
+            !WRITE(*,*) 'after senddata: iData'
         ENDIF
       
         ! Receive measured motion from OpenFRESCO
         sData(1) = 6
+        !WRITE(*,*) 'before senddata: measured motion flag'
+        !WRITE(*,*) 'sData(1)', sData(1)
         CALL senddata(socketID, sizeDouble,&
                       sData, dataSize, stat)
-               
+        !WRITE(*,*) 'after senddata: measured motion flag'
+        
+        
+        !WRITE(*,*) 'before recvdata: measured motion'
         CALL recvdata(socketID, sizeDouble,&
                       rData, dataSize, stat)
+        !WRITE(*,*) 'after recvdata: measured motion'
                
-        DO i = 1, 12! getting motions
-            InputAry(i) = rData(i)
-        ENDDO
+        !DO i = 1, 12! getting motions
+        !    InputAry(i) = rData(i)
+        !ENDDO
+        
 
 
      
         IF ( NumInputs_c == NumFixedInputs ) THEN  ! Default for hybrid model use: ElastoDyn inputs
             ! Replace InputAry with rData
-            m_FAST%ExternInput%PtfmSurge    = InputAry(1)
-            m_FAST%ExternInput%PtfmSway     = InputAry(2)
-            m_FAST%ExternInput%PtfmHeave    = InputAry(3)
-            m_FAST%ExternInput%PtfmRoll     = InputAry(4)
-            m_FAST%ExternInput%PtfmPitch    = InputAry(5)
-            m_FAST%ExternInput%PtfmYaw      = InputAry(6)
-            m_FAST%ExternInput%PtfmSurgeVel = InputAry(7)
-            m_FAST%ExternInput%PtfmSwayVel  = InputAry(8)
-            m_FAST%ExternInput%PtfmHeaveVel = InputAry(9)
-            m_FAST%ExternInput%PtfmRollVel  = InputAry(10)
-            m_FAST%ExternInput%PtfmPitchVel = InputAry(11)
-            m_FAST%ExternInput%PtfmYawVel   = InputAry(12)
+            ! We can use 
+            m_FAST%ExternInput%PtfmSurge    = rData(1)
+            m_FAST%ExternInput%PtfmSway     = rData(2)
+            m_FAST%ExternInput%PtfmHeave    = rData(3)
+            m_FAST%ExternInput%PtfmRoll     = rData(4)
+            m_FAST%ExternInput%PtfmPitch    = rData(5)
+            m_FAST%ExternInput%PtfmYaw      = rData(6)
+            m_FAST%ExternInput%PtfmSurgeVel = rData(7)
+            m_FAST%ExternInput%PtfmSwayVel  = rData(8)
+            m_FAST%ExternInput%PtfmHeaveVel = rData(9)
+            m_FAST%ExternInput%PtfmRollVel  = rData(10)
+            m_FAST%ExternInput%PtfmPitchVel = rData(11)
+            m_FAST%ExternInput%PtfmYawVel   = rData(12)
         ENDIF
             
         ! Probably no need, but check it
         ! Some other modular configuration is being used for Simulink (@mcd: these functions comprised the traditional use of Simulink with OpenFAST)
-        IF ( NumInputs_c > NumFixedInputs ) THEN
-            IF ( NumInputs_c == NumFixedInputs + 8 ) THEN  ! ED + SrvD inputs, no IfW inputs
-                m_FAST%ExternInput%GenTrq      = InputAry(13)
-                m_FAST%ExternInput%ElecPwr     = InputAry(14)
-                m_FAST%ExternInput%YawPosCom   = InputAry(15)
-                m_FAST%ExternInput%YawRateCom  = InputAry(16)
-                m_FAST%ExternInput%BlPitchCom  = InputAry(17:19)
-                m_FAST%ExternInput%HSSBrFrac   = InputAry(20)  
-            ELSEIF ( Numinputs_c == NumFixedInputs + 11 ) THEN  ! SrvD + IfW + ED inputs
-                m_FAST%ExternInput%GenTrq      = InputAry(13)
-                m_FAST%ExternInput%ElecPwr     = InputAry(14)
-                m_FAST%ExternInput%YawPosCom   = InputAry(15)
-                m_FAST%ExternInput%YawRateCom  = InputAry(16)
-                m_FAST%ExternInput%BlPitchCom  = InputAry(17:19)
-                m_FAST%ExternInput%HSSBrFrac   = InputAry(20)  
-                m_FAST%ExternInput%LidarFocus  = InputAry(21:23)
-            ENDIF
-          ENDIF
+        !IF ( NumInputs_c > NumFixedInputs ) THEN
+        !    IF ( NumInputs_c == NumFixedInputs + 8 ) THEN  ! ED + SrvD inputs, no IfW inputs
+        !        m_FAST%ExternInput%GenTrq      = InputAry(13)
+        !        m_FAST%ExternInput%ElecPwr     = InputAry(14)
+        !        m_FAST%ExternInput%YawPosCom   = InputAry(15)
+        !        m_FAST%ExternInput%YawRateCom  = InputAry(16)
+        !        m_FAST%ExternInput%BlPitchCom  = InputAry(17:19)
+        !        m_FAST%ExternInput%HSSBrFrac   = InputAry(20)  
+        !    ELSEIF ( Numinputs_c == NumFixedInputs + 11 ) THEN  ! SrvD + IfW + ED inputs
+        !        m_FAST%ExternInput%GenTrq      = InputAry(13)
+        !        m_FAST%ExternInput%ElecPwr     = InputAry(14)
+        !        m_FAST%ExternInput%YawPosCom   = InputAry(15)
+        !        m_FAST%ExternInput%YawRateCom  = InputAry(16)
+        !        m_FAST%ExternInput%BlPitchCom  = InputAry(17:19)
+        !        m_FAST%ExternInput%HSSBrFrac   = InputAry(20)  
+        !        m_FAST%ExternInput%LidarFocus  = InputAry(21:23)
+        !    ENDIF
+        !  ENDIF
       
     END SUBROUTINE FAST_SetExternalInputs_Hybrid
    
@@ -360,8 +371,9 @@ CONTAINS
     !...............................................................................................................................
     
         TYPE(FAST_TurbineType), INTENT(IN   )   :: Turbine                  ! All data for one instance of a turbine
-        !REAL(ReKi),             INTENT(  OUT)   :: Outputs(:)               ! Single array of output
-        REAL(Reki),             DIMENSION(6)    :: Outputs                  ! Array to be filled with force and sent to OpenFRESCO
+        REAL(ReKi)                :: Outputs(81)               ! Single array of output
+        ! figure out what Reki means
+        !REAL(Reki),             DIMENSION(6)    :: Outputs                  ! Array to be filled with force and sent to OpenFRESCO
         INTEGER,                PARAMETER       :: First_idx_AeroDyn = 69   ! check start at 0 or 1
         INTEGER                                 :: i
    
