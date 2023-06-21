@@ -56,3 +56,4 @@ Release_Hybrid
 *.user
 *.vs/
 *.filters
+vs-build/gitVersionInfo.h
