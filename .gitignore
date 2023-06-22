@@ -50,6 +50,8 @@ Release_Hybrid
 
 # log files
 *.htm
+*.log
+
 
 # project
 *.u2d

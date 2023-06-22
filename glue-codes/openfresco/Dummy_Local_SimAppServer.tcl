@@ -15,7 +15,7 @@
 # ------------------------------
 # Start of model generation
 # ------------------------------
-logFile "OneBayFrame_Local_SimAppServer.log"
+logFile "Dummy_Local_SimAppServer.log"
 defaultUnits -force kip -length in -time sec -temp F
 
 # create ModelBuilder (with two-dimensions and 2 DOF/node)

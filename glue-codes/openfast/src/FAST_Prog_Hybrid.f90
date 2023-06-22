@@ -70,11 +70,11 @@ INTEGER                                :: socketID
 ! Below is fortran 77 format
 !integer*4 socketID
 ! common    //socketID ! AS: check this
-INTEGER                                 :: stat                                  ! status for error
-INTEGER,                DIMENSION(11)       :: iData                             ! Array of Integer, store number of DOF of receiving/sending sinals
+INTEGER                                         :: stat                              ! status for error
+INTEGER,                DIMENSION(11)           :: iData                             ! Array of Integer, store number of DOF of receiving/sending sinals
 ! Something wrong with this
-REAL(8),                   DIMENSION(dataSize) :: sData                             ! Array of sending (command) signal
-REAL(8),                   DIMENSION(dataSize) :: rData                             ! Array of receiving (feedback) signal
+REAL(8),                   DIMENSION(dataSize)  :: sData                             ! Array of sending (command) signal
+REAL(8),                   DIMENSION(dataSize)  :: rData                             ! Array of receiving (feedback) signal
 ! Currently, there is no iteration between FAST_SetExternalInputs_Hybrid() and FAST_SetExternalInputs_Hybrid()
 ! So, if no need to check if time advances or not.
 ! REAL                                    :: timePast                            ! to cmopared current time step and previsou time step
@@ -187,11 +187,12 @@ DO i_turb = 1,NumTurbines
 END DO
    
 
-CONTAINS
+    CONTAINS
     !...............................................................................................................................
-    SUBROUTINE CheckError(ErrID,Msg,ErrLocMsg)
     ! This subroutine sets the error message and level and cleans up if the error is >= AbortErrLev
     !...............................................................................................................................
+    SUBROUTINE CheckError(ErrID,Msg,ErrLocMsg)
+   
         ! Passed arguments
         INTEGER(IntKi), INTENT(IN)           :: ErrID       ! The error identifier (ErrStat)
         CHARACTER(*),   INTENT(IN)           :: Msg         ! The error message (ErrMsg)
@@ -222,9 +223,11 @@ CONTAINS
     END SUBROUTINE CheckError
     
     !...............................................................................................................................
-    SUBROUTINE FAST_SetExternalInputs_Hybrid(iTurb, NumInputs_c, m_FAST)
-    ! This subroutine gets motions sent from OpenFresco through tcp_socket
+    ! This subroutine gets motion, which is recorded by DAQ system and sent to OpenFresco, from OpenFresco. Then it assigns the 
+    ! motion to the turbine model, m_FAST. 
     !...............................................................................................................................
+    SUBROUTINE FAST_SetExternalInputs_Hybrid(iTurb, NumInputs_c, m_FAST)
+    
         USE, INTRINSIC :: ISO_C_Binding
         USE FAST_Types
         ! USE FAST_Data, only: NumFixedInputs
@@ -244,7 +247,7 @@ CONTAINS
         ! transfer inputs from Simulink to FAST
         IF ( NumInputs_c < NumFixedInputs ) RETURN ! This is an error
       
-      
+        ! May remove this later -----------------------------------------------
         ! extract socketID
         ! (jtype = user-defined integer value n in element type VUn)
         ! if (jtype .le. numSockIDs) then
@@ -255,20 +258,17 @@ CONTAINS
         !*              'numSockIDs parameter in genericClient_exp.for'
         !    call xplb_exit
         ! endif
-      
         ! setup connection with SimAppSiteServer
         ! if (socketID .eq. 0 .and. time(iTotalTime) .gt. 0.0) then
         !IF (socketID .eq. 0 .and. n_t_global .gt. 0.0) THEN
+        ! ---------------------------------------------------------------------
         IF (socketID .eq. 0) THEN
-            !WRITE(*,*) 'before settingupconnection'
             sizeMachineInet = 9+1
             CALL setupconnectionclient(port, &
                                        '127.0.0.1'//char(0), &
                                        sizeMachineInet, &
                                        socketID)
-            !WRITE(*,*) 'after settingupconnection'
             IF (socketID .le. 0) THEN
-                !WRITE(*,*) 'ERROR - failed to setup connection'
              !   call xplb_exit AS:terminate
             ENDIF
              ! socketIDs(jtype) = socketID: AS: not saveing
@@ -296,36 +296,26 @@ CONTAINS
             iData(10) = 1
             ! dataSize
             iData(11) = dataSize
-            !WRITE(*,*) 'before senddata: iData'
             CALL senddata(socketID, sizeInt, &
                           iData, 11, stat)
-            !WRITE(*,*) 'after senddata: iData'
         ENDIF
       
-        ! Receive measured motion from OpenFRESCO
-        sData(1) = 6
-        !WRITE(*,*) 'before senddata: measured motion flag'
-        !WRITE(*,*) 'sData(1)', sData(1)
+        ! Ask OpenFresc to send measured motion
+        sData(1) = 6                                ! OF_RemoteTest_getDaqResponse = 6
         CALL senddata(socketID, sizeDouble,&
                       sData, dataSize, stat)
-        !WRITE(*,*) 'after senddata: measured motion flag'
-        
-        
-        !WRITE(*,*) 'before recvdata: measured motion'
+        ! Receive measured motion from OpenFresco
         CALL recvdata(socketID, sizeDouble,&
                       rData, dataSize, stat)
-        !WRITE(*,*) 'after recvdata: measured motion'
-               
-        !DO i = 1, 12! getting motions
+        
+        ! Remove this later --------------
+        ! DO i = 1, 12! getting motions
         !    InputAry(i) = rData(i)
         !ENDDO
+        ! --------------------------------
         
-
-
-     
+        ! Assign received motion to wind turbine model
         IF ( NumInputs_c == NumFixedInputs ) THEN  ! Default for hybrid model use: ElastoDyn inputs
-            ! Replace InputAry with rData
-            ! We can use 
             m_FAST%ExternInput%PtfmSurge    = rData(1)
             m_FAST%ExternInput%PtfmSway     = rData(2)
             m_FAST%ExternInput%PtfmHeave    = rData(3)
@@ -340,7 +330,7 @@ CONTAINS
             m_FAST%ExternInput%PtfmYawVel   = rData(12)
         ENDIF
             
-        ! Probably no need, but check it
+        ! May remove this later ---------------------------------------------------------------------------------------------------------------------
         ! Some other modular configuration is being used for Simulink (@mcd: these functions comprised the traditional use of Simulink with OpenFAST)
         !IF ( NumInputs_c > NumFixedInputs ) THEN
         !    IF ( NumInputs_c == NumFixedInputs + 8 ) THEN  ! ED + SrvD inputs, no IfW inputs
@@ -360,24 +350,23 @@ CONTAINS
         !        m_FAST%ExternInput%LidarFocus  = InputAry(21:23)
         !    ENDIF
         !  ENDIF
-      
+        ! -------------------------------------------------------------------------------------------------------------------------------------------
+        
     END SUBROUTINE FAST_SetExternalInputs_Hybrid
    
-    !----------------------------------------------------------------------------------------------------------------------------------
-    !> Routine that calls FillOutputAry for one instance of a Turbine data structure. This is a separate subroutine so that the FAST
-    !! driver programs do not need to change or operate on the individual module level. (Called from Simulink interface.)
+    !...............................................................................................................................
+    ! This subroutine gets all the simulated force of the turbine at t = n+1 time step. It also commits AeroDyn force and time at 
+    ! previous time step, t = n,  before assigning the obtained AeroDyn force and time to sData array.
     !...............................................................................................................................
     SUBROUTINE FillOutputAry_T_Hybrid(Turbine)
-    !...............................................................................................................................
     
         TYPE(FAST_TurbineType), INTENT(IN   )   :: Turbine                  ! All data for one instance of a turbine
         REAL(ReKi)                :: Outputs(81)               ! Single array of output
-        ! figure out what Reki means
-        !REAL(Reki),             DIMENSION(6)    :: Outputs                  ! Array to be filled with force and sent to OpenFRESCO
-        INTEGER,                PARAMETER       :: First_idx_AeroDyn = 69   ! check start at 0 or 1
+        ! figure out what Reki means (CHECK type.c file in registory)
+        INTEGER,                PARAMETER       :: First_idx_AeroDyn = 69
         INTEGER                                 :: i
    
-        ! 1. Call FillOutputAray to get whole output array
+        ! Fill Outputs array with simulated force
         CALL FillOutputAry(Turbine%p_FAST, Turbine%y_FAST, Turbine%IfW%y%WriteOutput, Turbine%OpFM%y%WriteOutput, &
                            Turbine%ED%Output(1)%WriteOutput, Turbine%AD%y%WriteOutput, Turbine%SrvD%y%WriteOutput, &
                            Turbine%HD%y%WriteOutput, Turbine%SD%y%WriteOutput, Turbine%ExtPtfm%y%WriteOutput, Turbine%MAP%y%WriteOutput, &
@@ -385,29 +374,19 @@ CONTAINS
                            Turbine%IceF%y%WriteOutput, Turbine%IceD%y, Turbine%BD%y, Outputs)
     
     
-        ! 2. Commit states variables
-        ! commit state <- Now we know time advances, so comment it
-        ! if (time(iTotalTime) .gt. timePast) then
-        
-        ! The ID at index 1 tells OpenFresco what data it is. You can check it in FrescoGlobals.h
-        ! ################ !
-        ! ASK ANDREAS THIS !
-        ! ################ !
-        sData(1) = 5                            ! 5: commit state
+        ! Commit states variables before updating sData array
+        sData(1) = 5                                            ! OF_RemoteTest_commitState = 5
         CALL senddata(socketID, sizeDouble,&
                       sData, dataSize, stat)
         
-        ! timePast = time(iTotalTime)
-        ! endif
-        
-        ! 3. Send the extracted array to OpenFresco through socket communicaiton.
-        ! send trial response to experimental element
-        sData(1) = 3                                    ! 3: set trial response
+        ! Extract AeroDyn force from OutPuts and assign it to sData array
+        sData(1) = 3                                    ! OF_RemoteTest_setTrialResponse = 3
         DO i = 1, 6
             sData(1+i) = Outputs(First_idx_AeroDyn + i) ! Fill from sData(2) to (7) with RtAeroFxh, RtAeroFyh, RtAeroFzh, RtAeroMxh, RtAeroMyh, and RtAeroMzh.
         ENDDO
-        !sData(1+1*6+1) = time(n_t_global)               ! Fill sData(8) with current time
+        ! Assign numerical time to sData array
         sData(1+1*6+1) = n_t_global                     ! Fill sData(8) with current time
+        ! Send AeroDyn force and time to OpenFresco
         CALL senddata(socketID, sizeDouble,&
                       sData, dataSize, stat)
                         
