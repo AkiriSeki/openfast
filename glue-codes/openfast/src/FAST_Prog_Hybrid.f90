@@ -54,8 +54,8 @@ CHARACTER(20)                         :: FlagArg                                
 INTEGER(IntKi)                        :: Restart_step                            ! step to start on (for restart) 
 
 ! Varuables for socket communication @ AS
-INTEGER,                PARAMETER     :: NumInputs_c = 12                        ! Number of Inputs from OpenFresco (This may be removed in the future)
-INTEGER,                PARAMETER     :: NumFixedInputs = 12
+!INTEGER,                PARAMETER     :: NumInputs_c = 12                        ! Number of Inputs from OpenFresco (This may be removed in the future)
+!INTEGER,                PARAMETER     :: NumFixedInputs = 12
 INTEGER,                PARAMETER      :: dataSize = 256                        ! maximum data size sent/receive to/from OpenFresco
 ! Currently, assuming only one socket communication so belowe is commented out
 !INTEGER,                PARAMETER      :: numSockIDs = 32                       ! maximum number of sockect communication)
@@ -159,7 +159,7 @@ DO n_t_global = Restart_step, Turbine(1)%p_FAST%n_TMax_m1
         ! ##########################################################################################
         ! Receive motion from OpenFresco  @ AS 
         ! ##########################################################################################
-        CALL FAST_SetExternalInputs_Hybrid(i_turb, NumInputs_c, Turbine(i_turb)%m_FAST)
+        CALL FAST_SetExternalInputs_Hybrid(i_turb, Turbine(i_turb)%m_FAST)
         
         CALL FAST_Solution_T( t_initial, n_t_global, Turbine(i_turb), ErrStat, ErrMsg )
         CALL CheckError( ErrStat, ErrMsg  )
@@ -226,7 +226,7 @@ END DO
     ! This subroutine gets motion, which is recorded by DAQ system and sent to OpenFresco, from OpenFresco. Then it assigns the 
     ! motion to the turbine model, m_FAST. 
     !...............................................................................................................................
-    SUBROUTINE FAST_SetExternalInputs_Hybrid(iTurb, NumInputs_c, m_FAST)
+    SUBROUTINE FAST_SetExternalInputs_Hybrid(iTurb, m_FAST)
     
         USE, INTRINSIC :: ISO_C_Binding
         USE FAST_Types
@@ -235,19 +235,18 @@ END DO
         IMPLICIT  NONE
 
         INTEGER(C_INT),         INTENT(IN   )           :: iTurb                  ! Turbine number 
-        INTEGER(C_INT),         INTENT(IN   )           :: NumInputs_c            ! May 
+        !INTEGER(C_INT),         INTENT(IN   )           :: NumInputs_c            ! May 
         !REAL(C_DOUBLE),         INTENT(IN   )           :: InputAry(NumInputs_c)  ! Inputs array from OpenFresco
-        !REAL,                   DIMENSION(NumInputs_c)  :: InputAry     ! Input array from OpenFresco
         TYPE(FAST_MiscVarType), INTENT(INOUT)           :: m_FAST                 ! Miscellaneous variables
    
         INTEGER  :: num_twr_nodes
         INTEGER  :: i
-   
+        
+        ! May remove this later -----------------------------------------------
         ! set the inputs from external code here...
         ! transfer inputs from Simulink to FAST
-        IF ( NumInputs_c < NumFixedInputs ) RETURN ! This is an error
-      
-        ! May remove this later -----------------------------------------------
+        !IF ( NumInputs_c < NumFixedInputs ) RETURN ! This is an error
+        
         ! extract socketID
         ! (jtype = user-defined integer value n in element type VUn)
         ! if (jtype .le. numSockIDs) then
@@ -315,7 +314,7 @@ END DO
         ! --------------------------------
         
         ! Assign received motion to wind turbine model
-        IF ( NumInputs_c == NumFixedInputs ) THEN  ! Default for hybrid model use: ElastoDyn inputs
+        !IF ( NumInputs_c == NumFixedInputs ) THEN  ! Default for hybrid model use: ElastoDyn inputs
             m_FAST%ExternInput%PtfmSurge    = rData(1)
             m_FAST%ExternInput%PtfmSway     = rData(2)
             m_FAST%ExternInput%PtfmHeave    = rData(3)
@@ -328,7 +327,7 @@ END DO
             m_FAST%ExternInput%PtfmRollVel  = rData(10)
             m_FAST%ExternInput%PtfmPitchVel = rData(11)
             m_FAST%ExternInput%PtfmYawVel   = rData(12)
-        ENDIF
+        !ENDIF
             
         ! May remove this later ---------------------------------------------------------------------------------------------------------------------
         ! Some other modular configuration is being used for Simulink (@mcd: these functions comprised the traditional use of Simulink with OpenFAST)
