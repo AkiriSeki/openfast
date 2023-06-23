@@ -59,8 +59,8 @@ INTEGER(IntKi)                        :: Restart_step                           
 INTEGER,                PARAMETER      :: dataSize = 256                        ! maximum data size sent/receive to/from OpenFresco
 ! Currently, assuming only one socket communication so belowe is commented out
 !INTEGER,                PARAMETER      :: numSockIDs = 32                       ! maximum number of sockect communication)
-INTEGER,                PARAMETER      :: sizeInt = 4
-INTEGER,                PARAMETER      :: sizeDouble = 8
+INTEGER,                PARAMETER      :: sizeInt = 4                           ! data size of integer
+INTEGER,                PARAMETER      :: sizeDouble = 8                        ! data size of double
 INTEGER,                PARAMETER      :: port = 8090
 INTEGER                                :: sizeMachineInet
 ! Currently, assuming only one socket communication so below is commented out
@@ -71,7 +71,7 @@ INTEGER                                :: socketID
 !integer*4 socketID
 ! common    //socketID ! AS: check this
 INTEGER                                         :: stat                              ! status for error
-INTEGER,                DIMENSION(11)           :: iData                             ! Array of Integer, store number of DOF of receiving/sending sinals
+INTEGER,                   DIMENSION(11)        :: iData                             ! Array of Integer, store number of DOF of receiving/sending sinals
 ! Something wrong with this
 REAL(8),                   DIMENSION(dataSize)  :: sData                             ! Array of sending (command) signal
 REAL(8),                   DIMENSION(dataSize)  :: rData                             ! Array of receiving (feedback) signal
@@ -262,7 +262,7 @@ END DO
         !IF (socketID .eq. 0 .and. n_t_global .gt. 0.0) THEN
         ! ---------------------------------------------------------------------
         IF (socketID .eq. 0) THEN
-            sizeMachineInet = 9+1
+            sizeMachineInet = 9+1                               ! length of Internet address including char(0) at the end
             CALL setupconnectionclient(port, &
                                        '127.0.0.1'//char(0), &
                                        sizeMachineInet, &
@@ -315,18 +315,18 @@ END DO
         
         ! Assign received motion to wind turbine model
         !IF ( NumInputs_c == NumFixedInputs ) THEN  ! Default for hybrid model use: ElastoDyn inputs
-            m_FAST%ExternInput%PtfmSurge    = rData(1)
-            m_FAST%ExternInput%PtfmSway     = rData(2)
-            m_FAST%ExternInput%PtfmHeave    = rData(3)
-            m_FAST%ExternInput%PtfmRoll     = rData(4)
-            m_FAST%ExternInput%PtfmPitch    = rData(5)
-            m_FAST%ExternInput%PtfmYaw      = rData(6)
-            m_FAST%ExternInput%PtfmSurgeVel = rData(7)
-            m_FAST%ExternInput%PtfmSwayVel  = rData(8)
-            m_FAST%ExternInput%PtfmHeaveVel = rData(9)
-            m_FAST%ExternInput%PtfmRollVel  = rData(10)
-            m_FAST%ExternInput%PtfmPitchVel = rData(11)
-            m_FAST%ExternInput%PtfmYawVel   = rData(12)
+        m_FAST%ExternInput%PtfmSurge    = rData(1)
+        m_FAST%ExternInput%PtfmSway     = rData(2)
+        m_FAST%ExternInput%PtfmHeave    = rData(3)
+        m_FAST%ExternInput%PtfmRoll     = rData(4)
+        m_FAST%ExternInput%PtfmPitch    = rData(5)
+        m_FAST%ExternInput%PtfmYaw      = rData(6)
+        m_FAST%ExternInput%PtfmSurgeVel = rData(7)
+        m_FAST%ExternInput%PtfmSwayVel  = rData(8)
+        m_FAST%ExternInput%PtfmHeaveVel = rData(9)
+        m_FAST%ExternInput%PtfmRollVel  = rData(10)
+        m_FAST%ExternInput%PtfmPitchVel = rData(11)
+        m_FAST%ExternInput%PtfmYawVel   = rData(12)
         !ENDIF
             
         ! May remove this later ---------------------------------------------------------------------------------------------------------------------
@@ -362,7 +362,7 @@ END DO
         TYPE(FAST_TurbineType), INTENT(IN   )   :: Turbine                  ! All data for one instance of a turbine
         REAL(ReKi)                :: Outputs(81)               ! Single array of output
         ! figure out what Reki means (CHECK type.c file in registory)
-        INTEGER,                PARAMETER       :: First_idx_AeroDyn = 69
+        INTEGER,                PARAMETER       :: First_idx_AeroDyn = 69 ! If OpFM and BD are activated, this wil change
         INTEGER                                 :: i
    
         ! Fill Outputs array with simulated force
