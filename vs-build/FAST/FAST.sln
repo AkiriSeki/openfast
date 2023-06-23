@@ -27,8 +27,6 @@ Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "OpenFAST-Simulink", "..\Ope
 		{1A440C5B-CBA6-47D9-9CC2-C1CBA8C00BF9} = {1A440C5B-CBA6-47D9-9CC2-C1CBA8C00BF9}
 	EndProjectSection
 EndProject
-Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "FAST_Hybrid", "..\FAST-Hybrid\FAST_Hybrid.vfproj", "{C3041F06-0114-437F-941B-DF92346D0B14}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug_Double|Win32 = Debug_Double|Win32
@@ -191,25 +189,6 @@ Global
 		{C3C93CC0-EDD7-438F-988C-1F917FAEFA67}.Release|Win32.ActiveCfg = Release_Matlab|Win32
 		{C3C93CC0-EDD7-438F-988C-1F917FAEFA67}.Release|x64.ActiveCfg = Release_Matlab|x64
 		{C3C93CC0-EDD7-438F-988C-1F917FAEFA67}.Release|x64.Build.0 = Release_Matlab|x64
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Debug_Double|Win32.ActiveCfg = Debug_Double|Win32
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Debug_Double|x64.ActiveCfg = Debug_Double|x64
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Debug_Matlab|Win32.ActiveCfg = Debug_Double|Win32
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Debug_Matlab|Win32.Build.0 = Debug_Double|Win32
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Debug_Matlab|x64.ActiveCfg = Debug_Double|x64
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Debug|Win32.ActiveCfg = Debug|Win32
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Debug|x64.ActiveCfg = Debug|x64
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Double|Win32.ActiveCfg = Release_Double|Win32
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Double|x64.ActiveCfg = Release_Double|x64
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Hybrid(michael)|Win32.ActiveCfg = Release_Double|Win32
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Hybrid(michael)|x64.ActiveCfg = Release_Double|x64
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Hybrid|Win32.ActiveCfg = Release_Hybrid|Win32
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Hybrid|Win32.Build.0 = Release_Hybrid|Win32
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Hybrid|x64.ActiveCfg = Release_Hybrid|x64
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Hybrid|x64.Build.0 = Release_Hybrid|x64
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Matlab|Win32.ActiveCfg = Release_Double|Win32
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Release_Matlab|x64.ActiveCfg = Release_Double|x64
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Release|Win32.ActiveCfg = Release|Win32
-		{C3041F06-0114-437F-941B-DF92346D0B14}.Release|x64.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
