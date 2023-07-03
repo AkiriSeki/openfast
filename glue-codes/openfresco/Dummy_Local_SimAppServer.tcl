@@ -36,17 +36,17 @@ uniaxialMaterial Steel02 1 1.5 2.8 0.01 18.5 0.925 0.15 0.0 1.0 0.0 1.0
 # Define control points
 # ---------------------
 # expControlPoint $tag <-node $nodeTag> $dof $rspType <-fact $f> <-lim $l $u> <-relTrial> <-relCtrl> <-relDaq> ...
-expControlPoint 1  1 disp
-expControlPoint 2  1 disp 1 force
+expControlPoint 1  1 force 2 force ...
+expControlPoint 2  1 disp  2 dips ... 1 vel 2 vel ...
 
 # Define experimental control
 # ---------------------------
 # expControl SimUniaxialMaterials $tag $matTags
 # We need simSimulink
-expControl SimUniaxialMaterials 1 1 1 1 1 1 1
+# expControl SimUniaxialMaterials 1 1 1 1 1 1 1
 #expControl xPCtarget 1 "10.10.10.100" 22222 "C:/Users/Andreas/Documents/OpenFresco/SourceCode/SRC/experimentalControl/Simulink/RTActualTestModels/cmAPI-xPCTarget-SCRAMNetGT-MTS_STS/HybridControllerD2D2sim" -trialCP 1 -outCP 2
 #expControl SCRAMNet 1 381020 -trialCP 1 -outCP 2
-#expControl SCRAMNetGT 1 4096 -trialCP 1 -outCP 2
+expControl SCRAMNetGT 1 4096 -trialCP 1 -outCP 2
 #expControl dSpace 1 DS1104 -trialCP 1 -outCP 2
 #expControl MTSCsi 1 "D:/Projects/MTS_CSI/OpenFresco/MtsCsi_Example/OneBayFrame/OpenFresco_mNEES.mtscs" 0.01 -trialCP 1 -outCP 2
 #expControl GenericTCP 1 "127.0.0.1" 44000 -ctrlModes 1 0 0 0 0 -daqModes 1 0 0 1 0
@@ -86,10 +86,10 @@ expSite LocalSite 1 1
 # expRecorder Site -file ServerSite_trialDsp.out -time -site 1 trialDisp
 # expRecorder Site -file ServerSite_trialVel.out -time -site 1 trialVel
 # expRecorder Site -file ServerSite_trialAcc.out -time -site 1 trialAccel
-expRecorder Site -file ServerSite_trialFrc.out -time -site 1 trialForce
+# expRecorder Site -file ServerSite_trialFrc.out -time -site 1 trialForce
 # expRecorder Site -file ServerSite_trialTme.out -time -site 1 trialTime
-expRecorder Site -file ServerSite_outDsp.out -time -site 1 outDisp
-expRecorder Site -file ServerSite_outVel.out -time -site 1 outVel
+# expRecorder Site -file ServerSite_outDsp.out -time -site 1 outDisp
+# expRecorder Site -file ServerSite_outVel.out -time -site 1 outVel
 # expRecorder Site -file ServerSite_outAcc.out -time -site 1 outAccel
 # expRecorder Site -file ServerSite_outFrc.out -time -site 1 outForce
 # expRecorder Site -file ServerSite_outTme.out -time -site 1 outTime
@@ -97,18 +97,20 @@ expRecorder Site -file ServerSite_outVel.out -time -site 1 outVel
 # expRecorder Setup -file ServerSetup_trialDsp.out -time -setup 1 trialDisp
 # expRecorder Setup -file ServerSetup_trialVel.out -time -setup 1 trialVel
 # expRecorder Setup -file ServerSetup_trialAcc.out -time -setup 1 trialAccel
+expRecorder Setup -file ServerSetup_trialFrc.out -time -setup 1 trialForce
 # expRecorder Setup -file ServerSetup_trialTme.out -time -setup 1 trialTime
-# expRecorder Setup -file ServerSetup_outDsp.out -time -setup 1 outDisp
-# expRecorder Setup -file ServerSetup_outVel.out -time -setup 1 outVel
+expRecorder Setup -file ServerSetup_outDsp.out -time -setup 1 outDisp
+expRecorder Setup -file ServerSetup_outVel.out -time -setup 1 outVel
 # expRecorder Setup -file ServerSetup_outAcc.out -time -setup 1 outAccel
 # expRecorder Setup -file ServerSetup_outFrc.out -time -setup 1 outForce
 # expRecorder Setup -file ServerSetup_outTme.out -time -setup 1 outTime
 # expRecorder Setup -file ServerSetup_ctrlDsp.out -time -setup 1 ctrlDisp
 # expRecorder Setup -file ServerSetup_ctrlVel.out -time -setup 1 ctrlVel
 # expRecorder Setup -file ServerSetup_ctrlAcc.out -time -setup 1 ctrlAccel
+expRecorder Setup -file ServerSetup_ctrlFrc.out -time -setup 1 ctrlForce
 # expRecorder Setup -file ServerSetup_ctrlTme.out -time -setup 1 ctrlTime
-# expRecorder Setup -file ServerSetup_daqDsp.out -time -setup 1 daqDisp
-# expRecorder Setup -file ServerSetup_daqVel.out -time -setup 1 daqVel
+expRecorder Setup -file ServerSetup_daqDsp.out -time -setup 1 daqDisp
+expRecorder Setup -file ServerSetup_daqVel.out -time -setup 1 daqVel
 # expRecorder Setup -file ServerSetup_daqAcc.out -time -setup 1 daqAccel
 # expRecorder Setup -file ServerSetup_daqFrc.out -time -setup 1 daqForce
 # expRecorder Setup -file ServerSetup_daqTme.out -time -setup 1 daqTime
