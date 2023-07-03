@@ -36,7 +36,11 @@
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
 		<Configuration Name="Release|x64" OutputDirectory="..\..\build\bin\" TargetName="openfast-hybrid_$(PlatformName)" WholeProgramOptimization="true">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="x64/Release/" PreprocessorDefinitions="COMPILE_SIMULINK" StandardWarnings="standardWarningsF03" DisableSpecificDiagnostics="5268,5199" UseMkl="mklSequential"/>
+<<<<<<< HEAD
 				<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="C:\Users\simpsoba_host\projects\RTHS-OWT\externalDependencies\openfast\build\bin" GenerateManifest="false" SubSystem="subSystemConsole" StackReserveSize="9999999" AdditionalDependencies="Socket.lib"/>
+=======
+				<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="../../build/bin" GenerateManifest="false" SubSystem="subSystemConsole" StackReserveSize="9999999" AdditionalDependencies="Socket.lib"/>
+>>>>>>> 2ce785e0a3a8314778671e17aaa3a6f29e73d4e4
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
 				<Tool Name="VFCustomBuildTool"/>
