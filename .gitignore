@@ -52,10 +52,12 @@ Release_Hybrid
 *.htm
 *.log
 
-
 # project
 *.u2d
 *.user
 *.vs/
 *.filters
 vs-build/gitVersionInfo.h
+
+# output
+*.outb
