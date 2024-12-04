@@ -362,8 +362,11 @@ END DO
         TYPE(FAST_TurbineType), INTENT(IN   )   :: Turbine                  ! All data for one instance of a turbine
         REAL(ReKi)                :: Outputs(81)               ! Single array of output
         ! figure out what Reki means (CHECK type.c file in registory)
-        INTEGER,                PARAMETER       :: First_idx_AeroDyn = 69 ! If OpFM and BD are activated, this wil change
+        INTEGER,                PARAMETER       :: First_idx_AeroDyn = 67 ! I do not know why but this is the index
+        INTEGER,                PARAMETER       :: idx_Azimuth = 4 
         INTEGER                                 :: i
+        REAL(8),                PARAMETER       :: pi = 4 *ATAN(1.0_8)
+        REAL(8)                                :: AzimuthPi
    
         ! Fill Outputs array with simulated force
         CALL FillOutputAry(Turbine%p_FAST, Turbine%y_FAST, Turbine%IfW%y%WriteOutput, Turbine%OpFM%y%WriteOutput, &
@@ -378,13 +381,25 @@ END DO
         CALL senddata(socketID, sizeDouble,&
                       sData, dataSize, stat)
         
+        ! get Azmith in degree and convert it in rad 
+        AzimuthPi = Outputs(idx_Azimuth)*pi/180
+        
         ! Extract AeroDyn force from OutPuts and assign it to sData array
         sData(1) = 3                                    ! OF_RemoteTest_setTrialResponse = 3
-        DO i = 1, 6
-            sData(1+i) = Outputs(First_idx_AeroDyn + i) ! Fill from sData(2) to (7) with RtAeroFxh, RtAeroFyh, RtAeroFzh, RtAeroMxh, RtAeroMyh, and RtAeroMzh.
-        ENDDO
+        
+        ! Fill from sData(2) to (7) with RtAeroFxh, RtAeroFyh, RtAeroFzh, RtAeroMxh, RtAeroMyh, and RtAeroMzh.
+        sData(2) = Outputs(First_idx_AeroDyn + 1) 
+        sData(3) = Outputs(First_idx_AeroDyn + 2)*COS(AzimuthPI) - Outputs(First_idx_AeroDyn + 3)*SIN(AzimuthPI)
+        sData(4) = Outputs(First_idx_AeroDyn + 2)*SIN(AzimuthPI) + Outputs(First_idx_AeroDyn + 3)*COS(AzimuthPI)
+        sData(5) = Outputs(First_idx_AeroDyn + 4)
+        sData(6) = Outputs(First_idx_AeroDyn + 5)*COS(AzimuthPI) - Outputs(First_idx_AeroDyn + 6)*SIN(AzimuthPI)
+        sData(7) = Outputs(First_idx_AeroDyn + 5)*SIN(AzimuthPI) + Outputs(First_idx_AeroDyn + 6)*COS(AzimuthPI)
+    
+        
         ! Assign numerical time to sData array
-        sData(1+1*6+1) = n_t_global                     ! Fill sData(8) with current time
+        sData(8) = n_t_global                     ! Fill sData(8)->(9) with current time
+        
+        
         ! Send AeroDyn force and time to OpenFresco
         CALL senddata(socketID, sizeDouble,&
                       sData, dataSize, stat)

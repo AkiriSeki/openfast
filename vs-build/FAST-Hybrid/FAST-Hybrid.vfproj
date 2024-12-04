@@ -34,7 +34,7 @@
 				<Tool Name="VFPreBuildEventTool" CommandLine="..\CreateGitVersion.bat"/>
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
-		<Configuration Name="Release|x64" OutputDirectory="..\..\build\bin\" TargetName="openfast-hybrid_$(PlatformName)" WholeProgramOptimization="true">
+		<Configuration Name="Release|x64" OutputDirectory="..\..\build\bin\" TargetName="hybrid-openfast_$(PlatformName)" WholeProgramOptimization="true">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="x64/Release/" PreprocessorDefinitions="COMPILE_SIMULINK" StandardWarnings="standardWarningsF03" DisableSpecificDiagnostics="5268,5199" UseMkl="mklSequential"/>
 				<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="../../build/bin" GenerateManifest="false" SubSystem="subSystemConsole" StackReserveSize="9999999" AdditionalDependencies="Socket.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
